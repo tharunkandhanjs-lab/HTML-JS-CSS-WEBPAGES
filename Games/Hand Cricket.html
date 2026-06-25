@@ -1,0 +1,2831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hand Cricket · Pro</title>
+    <style>
+        /* ----- Font & Reset ----- */
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&display=swap");
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            background: #0b1410;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(34, 139, 34, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(0, 100, 0, 0.08) 0%, transparent 60%),
+                linear-gradient(145deg, #0b1410 0%, #162018 100%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ---- Animated particles ---- */
+        .particles {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(180, 255, 140, 0.06), transparent 70%);
+            animation: floatParticle 25s infinite alternate ease-in-out;
+        }
+        .particle:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: -5%;
+            left: -8%;
+            animation-duration: 30s;
+        }
+        .particle:nth-child(2) {
+            width: 400px;
+            height: 400px;
+            bottom: -10%;
+            right: -10%;
+            animation-duration: 35s;
+            animation-delay: -5s;
+        }
+        .particle:nth-child(3) {
+            width: 200px;
+            height: 200px;
+            top: 40%;
+            left: 55%;
+            animation-duration: 28s;
+            animation-delay: -10s;
+        }
+        .particle:nth-child(4) {
+            width: 250px;
+            height: 250px;
+            top: 10%;
+            right: 5%;
+            animation-duration: 32s;
+            animation-delay: -3s;
+        }
+        .particle:nth-child(5) {
+            width: 180px;
+            height: 180px;
+            bottom: 20%;
+            left: 20%;
+            animation-duration: 26s;
+            animation-delay: -8s;
+        }
+
+        @keyframes floatParticle {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: translate(40px, -30px) scale(1.1);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translate(-20px, 40px) scale(0.9);
+                opacity: 0.3;
+            }
+        }
+
+        /* ---- Main Container ---- */
+        .game-wrapper {
+            width: 100%;
+            max-width: 1100px;
+            background: rgba(10, 22, 14, 0.82);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 44px;
+            padding: 24px 28px 30px;
+            box-shadow:
+                0 30px 80px rgba(0, 0, 0, 0.9),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06),
+                0 0 0 1px rgba(100, 200, 80, 0.06);
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(120, 200, 100, 0.06);
+            transition: 0.3s;
+        }
+
+        /* ---- Top Bar ---- */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .top-bar .game-title {
+            color: rgba(220, 255, 200, 0.8);
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            text-shadow: 0 2px 12px rgba(0, 30, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .top-bar .game-title .ball-icon {
+            display: inline-block;
+            width: 26px;
+            height: 26px;
+            background: radial-gradient(circle at 35% 35%, #f5f0e0, #c4b89a);
+            border-radius: 50%;
+            box-shadow: inset -3px -3px 8px rgba(0, 0, 0, 0.4), inset 3px 3px 8px rgba(255, 255, 255, 0.3);
+            border: 2px solid #8a7a5a;
+            position: relative;
+        }
+        .top-bar .game-title .ball-icon::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #aa8866;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+        }
+        .top-bar .game-title span {
+            color: #b3e8a0;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .music-btn,
+        .stats-btn {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 40px;
+            padding: 6px 14px 6px 10px;
+            color: #c8e6c0;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .music-btn:hover,
+        .stats-btn:hover {
+            background: rgba(255, 255, 255, 0.10);
+            border-color: rgba(160, 220, 140, 0.2);
+            transform: scale(1.02);
+        }
+        .music-btn .icon,
+        .stats-btn .icon {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+        .music-btn .label,
+        .stats-btn .label {
+            font-size: 0.65rem;
+            opacity: 0.6;
+            font-weight: 400;
+        }
+        .music-btn .mute-icon {
+            opacity: 0.4;
+        }
+        .music-btn .mute-icon.playing {
+            opacity: 1;
+        }
+
+        /* ---- Player Name ---- */
+        .player-name-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .player-name-bar input {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 6px 16px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.85rem;
+            color: #e4f5dc;
+            outline: none;
+            transition: 0.2s;
+            min-width: 140px;
+            flex: 1;
+            max-width: 220px;
+        }
+        .player-name-bar input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .player-name-bar input:focus {
+            border-color: rgba(140, 220, 120, 0.3);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .player-name-bar .name-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* ---- Difficulty ---- */
+        .difficulty-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .difficulty-bar .diff-label {
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        .diff-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 3px 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .diff-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .diff-btn.active {
+            background: rgba(100, 200, 80, 0.12);
+            border-color: rgba(140, 220, 120, 0.2);
+            color: #b3e8a0;
+        }
+
+        /* ---- Scoreboard ---- */
+        .scoreboard-row {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .score-card {
+            flex: 1;
+            min-width: 130px;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            border-radius: 24px;
+            padding: 12px 18px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .score-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0.04;
+            background: radial-gradient(circle at 0% 0%, #fff, transparent 70%);
+            pointer-events: none;
+        }
+        .score-card.user-card {
+            border-left: 3px solid #6ecf5a;
+        }
+        .score-card.computer-card {
+            border-left: 3px solid #f5a97f;
+        }
+        .score-card .label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.35);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .score-card .label .badge {
+            font-size: 0.5rem;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 0 8px;
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .score-card .value {
+            font-size: 2.6rem;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1.2;
+            margin-top: 0px;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+            transition: 0.15s;
+        }
+        .score-card .value.waiting {
+            font-size: 0.95rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .score-card .value.pop {
+            animation: popScore 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .score-card .sub {
+            font-size: 0.6rem;
+            color: rgba(255, 255, 255, 0.2);
+            margin-top: 1px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+        .score-card .sub .highlight {
+            color: rgba(255, 215, 0, 0.5);
+        }
+        @keyframes popScore {
+            0% {
+                transform: scale(1);
+            }
+            40% {
+                transform: scale(1.25);
+                color: #f7f7a0;
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* ---- Stats Bar (wickets, overs, run rate) ---- */
+        .stats-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            padding: 6px 14px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .stats-bar .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 500;
+        }
+        .stats-bar .stat-item .stat-value {
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 700;
+            font-size: 0.8rem;
+            min-width: 20px;
+        }
+        .stats-bar .stat-item .stat-value.wicket {
+            color: #ff9a8a;
+        }
+        .stats-bar .stat-item .stat-value.rate {
+            color: #90c8f0;
+        }
+
+        /* ---- Target Indicator ---- */
+        .target-indicator {
+            display: none;
+            background: rgba(255, 200, 50, 0.06);
+            border: 1px solid rgba(255, 200, 50, 0.08);
+            border-radius: 14px;
+            padding: 4px 16px;
+            font-size: 0.8rem;
+            color: rgba(255, 220, 100, 0.6);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .target-indicator .target-number {
+            color: #ffd866;
+            font-size: 1.1rem;
+            font-weight: 900;
+        }
+        .target-indicator.visible {
+            display: block;
+            animation: fadeSlide 0.4s ease;
+        }
+        @keyframes fadeSlide {
+            0% {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ---- Game Area ---- */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2px 0 0;
+        }
+
+        .game-status {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #f0fae8;
+            text-align: center;
+            min-height: 2.8rem;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+            letter-spacing: 0.2px;
+            transition: 0.25s;
+            padding: 0 10px;
+        }
+        .game-status .highlight {
+            color: #d4f5c0;
+        }
+        .game-status .out-text {
+            color: #ff9a8a;
+        }
+        .game-status .win-text {
+            color: #b3f0a0;
+        }
+        .game-status .lose-text {
+            color: #f7a68a;
+        }
+        .game-status .tie-text {
+            color: #f0d080;
+        }
+        .game-status .info-text {
+            color: #90c8f0;
+        }
+
+        /* ---- Hands ---- */
+        .hands-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 36px;
+            margin: 0px 0 10px;
+            flex-wrap: wrap;
+        }
+        .hand-box {
+            background: rgba(0, 0, 0, 0.20);
+            border-radius: 36px;
+            padding: 8px 16px 12px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 90px;
+        }
+        .hand-box .hand-label {
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            color: rgba(255, 255, 255, 0.18);
+            margin-bottom: 0px;
+            font-weight: 600;
+        }
+        .hand-box .hand-emoji {
+            font-size: 72px;
+            line-height: 1.1;
+            transition: 0.2s;
+            filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.3));
+            user-select: none;
+        }
+        .hand-box .hand-number {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.12);
+            margin-top: -4px;
+            letter-spacing: 1px;
+        }
+        .hand-box .hand-number.active {
+            color: rgba(255, 255, 200, 0.5);
+        }
+        .hand-box .hand-emoji.shake {
+            animation: shakeHand 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .hand-box .hand-emoji.pop {
+            animation: popHand 0.4s ease;
+        }
+        @keyframes shakeHand {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+            20% {
+                transform: rotate(-12deg) scale(1.08);
+            }
+            40% {
+                transform: rotate(10deg) scale(1.05);
+            }
+            60% {
+                transform: rotate(-6deg) scale(1.02);
+            }
+            80% {
+                transform: rotate(4deg) scale(1);
+            }
+            100% {
+                transform: rotate(0deg) scale(1);
+            }
+        }
+        @keyframes popHand {
+            0% {
+                transform: scale(0.7);
+                opacity: 0.3;
+            }
+            60% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ---- Buttons ---- */
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin: 4px 0 6px;
+        }
+
+        .btn {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 60px;
+            padding: 9px 22px;
+            color: #e4f5dc;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            letter-spacing: 0.3px;
+            min-width: 56px;
+            text-align: center;
+            user-select: none;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.04), transparent 70%);
+            pointer-events: none;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.10);
+            border-color: rgba(160, 220, 140, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+        }
+        .btn:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: rgba(100, 200, 80, 0.12);
+            border-color: rgba(140, 220, 120, 0.12);
+        }
+        .btn-primary:hover {
+            background: rgba(100, 200, 80, 0.22);
+            border-color: rgba(140, 220, 120, 0.25);
+        }
+
+        .btn-run {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.05);
+            min-width: 48px;
+            padding: 8px 0;
+            font-size: 1rem;
+            border-radius: 40px;
+            font-weight: 900;
+        }
+        .btn-run:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(200, 255, 180, 0.12);
+        }
+        .btn-run .sub-label {
+            display: block;
+            font-size: 0.45rem;
+            font-weight: 400;
+            opacity: 0.25;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-ok {
+            background: rgba(80, 200, 120, 0.12);
+            border-color: rgba(80, 200, 120, 0.12);
+            padding: 9px 38px;
+            font-size: 1rem;
+            min-width: 100px;
+        }
+        .btn-ok:hover {
+            background: rgba(80, 200, 120, 0.22);
+            border-color: rgba(80, 200, 120, 0.25);
+        }
+
+        .btn-danger {
+            background: rgba(255, 80, 60, 0.10);
+            border-color: rgba(255, 80, 60, 0.10);
+            color: #ff9a8a;
+        }
+        .btn-danger:hover {
+            background: rgba(255, 80, 60, 0.20);
+            border-color: rgba(255, 80, 60, 0.20);
+        }
+        .btn-danger.active {
+            background: rgba(255, 80, 60, 0.20);
+            border-color: rgba(255, 80, 60, 0.25);
+            color: #ffb09a;
+            box-shadow: 0 0 30px rgba(255, 60, 40, 0.08);
+        }
+
+        .btn-hidden {
+            display: none !important;
+        }
+
+        /* ---- Risk / Powerplay button ---- */
+        .btn-risk {
+            background: rgba(255, 200, 0, 0.06);
+            border-color: rgba(255, 200, 0, 0.08);
+            color: rgba(255, 215, 0, 0.6);
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            min-width: unset;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .btn-risk:hover {
+            background: rgba(255, 200, 0, 0.12);
+            border-color: rgba(255, 200, 0, 0.15);
+            color: #ffd866;
+        }
+        .btn-risk.active {
+            background: rgba(255, 200, 0, 0.15);
+            border-color: rgba(255, 200, 0, 0.2);
+            color: #ffd866;
+            box-shadow: 0 0 30px rgba(255, 200, 0, 0.06);
+        }
+        .btn-risk .risk-label {
+            font-size: 0.5rem;
+            opacity: 0.5;
+            display: block;
+            font-weight: 400;
+        }
+
+        /* ---- Commentary ---- */
+        .commentary {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            width: 100%;
+            max-width: 600px;
+        }
+        .commentary .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.12);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .commentary .header .clear-log {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            font-size: 0.55rem;
+            transition: 0.2s;
+            font-family: inherit;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .commentary .header .clear-log:hover {
+            color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .commentary .log {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            max-height: 90px;
+            overflow-y: auto;
+            padding-right: 4px;
+            scroll-behavior: smooth;
+        }
+        .commentary .log::-webkit-scrollbar {
+            width: 3px;
+        }
+        .commentary .log::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .commentary .log::-webkit-scrollbar-thumb {
+            background: rgba(160, 220, 140, 0.12);
+            border-radius: 8px;
+        }
+
+        .commentary .log-item {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.35);
+            padding: 2px 8px;
+            border-radius: 6px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            animation: fadeInLog 0.3s ease;
+            font-weight: 400;
+            letter-spacing: 0.2px;
+        }
+        .commentary .log-item .ball-num {
+            color: rgba(255, 255, 255, 0.08);
+            font-size: 0.5rem;
+            font-weight: 600;
+            min-width: 20px;
+        }
+        .commentary .log-item .log-text {
+            flex: 1;
+        }
+        .commentary .log-item .log-run {
+            font-weight: 700;
+            font-size: 0.8rem;
+            min-width: 18px;
+            text-align: right;
+        }
+        .commentary .log-item.run {
+            color: rgba(200, 255, 180, 0.5);
+        }
+        .commentary .log-item.run .log-run {
+            color: #b3f0a0;
+        }
+        .commentary .log-item.out {
+            color: rgba(255, 150, 130, 0.6);
+        }
+        .commentary .log-item.out .log-run {
+            color: #ff9a8a;
+        }
+        .commentary .log-item.boundary {
+            color: rgba(180, 255, 180, 0.6);
+        }
+        .commentary .log-item.boundary .log-run {
+            color: #7fdb8a;
+        }
+        .commentary .log-item.info {
+            color: rgba(150, 200, 255, 0.4);
+            font-style: italic;
+        }
+        .commentary .log-item.risk {
+            color: rgba(255, 215, 0, 0.5);
+        }
+        .commentary .log-item.risk .log-run {
+            color: #ffd866;
+        }
+
+        @keyframes fadeInLog {
+            0% {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ---- Match Summary Overlay ---- */
+        .summary-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            animation: fadeOverlay 0.5s ease;
+        }
+        .summary-overlay.visible {
+            display: flex;
+        }
+        @keyframes fadeOverlay {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        .summary-card {
+            background: rgba(10, 22, 14, 0.96);
+            border: 1px solid rgba(120, 200, 100, 0.06);
+            border-radius: 44px;
+            padding: 34px 40px 38px;
+            max-width: 460px;
+            width: 100%;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            animation: slideUpCard 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes slideUpCard {
+            0% {
+                opacity: 0;
+                transform: translateY(40px) scale(0.96);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .summary-card .result-icon {
+            font-size: 3.6rem;
+            margin-bottom: 4px;
+        }
+        .summary-card .result-title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+        .summary-card .result-title.win {
+            color: #b3f0a0;
+        }
+        .summary-card .result-title.lose {
+            color: #f7a68a;
+        }
+        .summary-card .result-title.tie {
+            color: #f0d080;
+        }
+        .summary-card .result-sub {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 12px;
+        }
+        .summary-card .score-line {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin: 12px 0 16px;
+        }
+        .summary-card .score-line .item {
+            display: flex;
+            flex-direction: column;
+        }
+        .summary-card .score-line .item .label {
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.15);
+        }
+        .summary-card .score-line .item .num {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #fff;
+        }
+        .summary-card .score-line .item .num.user {
+            color: #6ecf5a;
+        }
+        .summary-card .score-line .item .num.comp {
+            color: #f5a97f;
+        }
+        .summary-card .btn-ok {
+            margin-top: 4px;
+            padding: 10px 44px;
+            font-size: 1rem;
+        }
+        .summary-card .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 0.65rem;
+            color: rgba(255, 255, 255, 0.2);
+            margin: 8px 0 4px;
+        }
+        .summary-card .summary-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .summary-card .summary-stats .stat-val {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 600;
+        }
+
+        /* ---- Stats Modal ---- */
+        .stats-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 180;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .stats-modal.visible {
+            display: flex;
+        }
+        .stats-modal .stats-card {
+            background: rgba(10, 22, 14, 0.96);
+            border: 1px solid rgba(120, 200, 100, 0.06);
+            border-radius: 40px;
+            padding: 30px 36px 34px;
+            max-width: 420px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8);
+            animation: slideUpCard 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .stats-modal .stats-card h3 {
+            color: #b3e8a0;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 14px;
+            letter-spacing: 1px;
+        }
+        .stats-modal .stats-card .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+        }
+        .stats-modal .stats-card .stat-grid .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.8rem;
+        }
+        .stats-modal .stats-card .stat-grid .stat-item .label {
+            color: rgba(255, 255, 255, 0.25);
+        }
+        .stats-modal .stats-card .stat-grid .stat-item .value {
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+        }
+        .stats-modal .stats-card .stat-grid .stat-item .value.high {
+            color: #ffd866;
+        }
+        .stats-modal .stats-card .close-stats {
+            margin-top: 16px;
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 30px;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+        }
+        .stats-modal .stats-card .close-stats:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .stats-modal .stats-card .reset-stats {
+            margin-top: 8px;
+            width: 100%;
+            padding: 6px;
+            background: rgba(255, 60, 40, 0.04);
+            border: 1px solid rgba(255, 60, 40, 0.06);
+            border-radius: 30px;
+            color: rgba(255, 100, 80, 0.2);
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 400;
+        }
+        .stats-modal .stats-card .reset-stats:hover {
+            background: rgba(255, 60, 40, 0.08);
+            color: rgba(255, 100, 80, 0.4);
+        }
+
+        /* ---- Flash overlays ---- */
+        .flash-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .flash-overlay.active {
+            opacity: 1;
+        }
+        .flash-overlay.out {
+            background: radial-gradient(ellipse at center, rgba(255, 60, 40, 0.06), transparent 70%);
+            animation: flashOut 0.7s ease forwards;
+        }
+        .flash-overlay.win {
+            background: radial-gradient(ellipse at center, rgba(100, 255, 80, 0.08), transparent 70%);
+            animation: flashWin 0.8s ease forwards;
+        }
+        .flash-overlay.lose {
+            background: radial-gradient(ellipse at center, rgba(255, 120, 80, 0.06), transparent 70%);
+            animation: flashLose 0.8s ease forwards;
+        }
+        .flash-overlay.boundary {
+            background: radial-gradient(ellipse at center, rgba(255, 215, 0, 0.05), transparent 70%);
+            animation: flashBoundary 0.6s ease forwards;
+        }
+        @keyframes flashOut {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        @keyframes flashWin {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        @keyframes flashLose {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        @keyframes flashBoundary {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* ---- Wicket effect ---- */
+        .wicket-effect {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 40;
+            display: none;
+        }
+        .wicket-effect.active {
+            display: block;
+        }
+        .stump {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            width: 5px;
+            height: 50px;
+            background: linear-gradient(to top, #c49a6c, #e8c8a0);
+            border-radius: 2px 2px 0 0;
+            transform-origin: bottom;
+            animation: stumpFall 0.6s ease forwards;
+            box-shadow: 0 0 20px rgba(200, 150, 80, 0.1);
+        }
+        .stump:nth-child(1) {
+            transform: translateX(-16px) rotate(0deg);
+            animation-delay: 0.05s;
+        }
+        .stump:nth-child(2) {
+            transform: translateX(0px) rotate(0deg);
+            animation-delay: 0.1s;
+        }
+        .stump:nth-child(3) {
+            transform: translateX(16px) rotate(0deg);
+            animation-delay: 0.15s;
+        }
+        @keyframes stumpFall {
+            0% {
+                transform: translateX(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(0) rotate(25deg) translateY(20px);
+                opacity: 0;
+            }
+        }
+        .stump:nth-child(1) {
+            animation-name: stumpFall1;
+        }
+        .stump:nth-child(3) {
+            animation-name: stumpFall3;
+        }
+        @keyframes stumpFall1 {
+            0% {
+                transform: translateX(-16px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-28px) rotate(-30deg) translateY(30px);
+                opacity: 0;
+            }
+        }
+        @keyframes stumpFall3 {
+            0% {
+                transform: translateX(16px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(28px) rotate(30deg) translateY(30px);
+                opacity: 0;
+            }
+        }
+
+        /* ---- Confetti ---- */
+        .confetti-piece {
+            position: fixed;
+            width: 7px;
+            height: 7px;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 45;
+            animation: confettiFall 1.2s ease forwards;
+        }
+        @keyframes confettiFall {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(80px) rotate(720deg) scale(0.3);
+            }
+        }
+
+        /* ---- Run popup ---- */
+        .run-popup {
+            position: fixed;
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: #ffd866;
+            text-shadow: 0 4px 30px rgba(255, 200, 50, 0.3), 0 0 60px rgba(255, 200, 50, 0.1);
+            pointer-events: none;
+            z-index: 100;
+            animation: floatUp 1s ease forwards;
+        }
+        .run-popup.out {
+            color: #ff6b5a;
+            text-shadow: 0 4px 30px rgba(255, 60, 40, 0.3);
+        }
+        .run-popup.boundary {
+            color: #7fdb8a;
+            text-shadow: 0 4px 30px rgba(100, 255, 120, 0.3);
+        }
+        .run-popup.risk {
+            color: #ffd866;
+            text-shadow: 0 4px 30px rgba(255, 200, 50, 0.5);
+        }
+        @keyframes floatUp {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0.5);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-30px) scale(1.2);
+            }
+            70% {
+                opacity: 1;
+                transform: translateY(-70px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-120px) scale(0.8);
+            }
+        }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 820px) {
+            .game-wrapper {
+                padding: 18px 14px 22px;
+                border-radius: 32px;
+            }
+            .scoreboard-row {
+                gap: 10px;
+            }
+            .score-card {
+                padding: 8px 14px 10px;
+                min-width: 90px;
+            }
+            .score-card .value {
+                font-size: 2rem;
+            }
+            .hand-box .hand-emoji {
+                font-size: 56px;
+            }
+            .hand-box {
+                padding: 6px 10px 8px;
+                min-width: 60px;
+            }
+            .hands-container {
+                gap: 16px;
+            }
+            .game-status {
+                font-size: 1.1rem;
+                min-height: 2.4rem;
+            }
+            .btn {
+                padding: 7px 16px;
+                font-size: 0.85rem;
+                min-width: 46px;
+            }
+            .btn-run {
+                min-width: 40px;
+                padding: 6px 0;
+                font-size: 0.9rem;
+            }
+            .btn-run .sub-label {
+                display: none;
+            }
+            .btn-ok {
+                padding: 8px 28px;
+                font-size: 0.95rem;
+                min-width: 80px;
+            }
+            .btn-risk {
+                font-size: 0.65rem;
+                padding: 4px 12px;
+            }
+            .top-bar .game-title {
+                font-size: 0.95rem;
+            }
+            .top-bar .game-title .ball-icon {
+                width: 22px;
+                height: 22px;
+            }
+            .music-btn,
+            .stats-btn {
+                padding: 4px 10px 4px 8px;
+                font-size: 0.85rem;
+            }
+            .music-btn .label,
+            .stats-btn .label {
+                display: none;
+            }
+            .commentary .log {
+                max-height: 70px;
+            }
+            .commentary .log-item {
+                font-size: 0.6rem;
+                padding: 1px 6px;
+            }
+            .summary-card {
+                padding: 26px 20px 30px;
+                border-radius: 32px;
+            }
+            .summary-card .result-icon {
+                font-size: 2.8rem;
+            }
+            .summary-card .result-title {
+                font-size: 1.4rem;
+            }
+            .summary-card .score-line .item .num {
+                font-size: 1.6rem;
+            }
+            .summary-card .score-line {
+                gap: 20px;
+            }
+            .summary-card .btn-ok {
+                padding: 8px 32px;
+                font-size: 0.9rem;
+                min-width: unset;
+            }
+            .target-indicator {
+                font-size: 0.7rem;
+                padding: 3px 12px;
+            }
+            .target-indicator .target-number {
+                font-size: 1rem;
+            }
+            .stats-bar {
+                gap: 10px;
+                padding: 4px 10px;
+            }
+            .stats-bar .stat-item {
+                font-size: 0.6rem;
+            }
+            .stats-bar .stat-item .stat-value {
+                font-size: 0.7rem;
+            }
+            .player-name-bar input {
+                font-size: 0.75rem;
+                padding: 4px 12px;
+                min-width: 100px;
+                max-width: 160px;
+            }
+            .difficulty-bar .diff-label {
+                font-size: 0.55rem;
+            }
+            .diff-btn {
+                font-size: 0.6rem;
+                padding: 2px 10px;
+            }
+            .stats-modal .stats-card {
+                padding: 24px 20px 28px;
+            }
+            .stats-modal .stats-card .stat-grid {
+                gap: 4px 10px;
+            }
+            .stats-modal .stats-card .stat-grid .stat-item {
+                font-size: 0.7rem;
+                padding: 4px 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-wrapper {
+                padding: 12px 8px 16px;
+                border-radius: 24px;
+            }
+            .scoreboard-row {
+                flex-direction: column;
+                gap: 6px;
+            }
+            .score-card {
+                padding: 6px 12px 8px;
+                min-width: unset;
+            }
+            .score-card .value {
+                font-size: 1.6rem;
+            }
+            .hand-box .hand-emoji {
+                font-size: 42px;
+            }
+            .hand-box {
+                padding: 4px 6px 6px;
+                min-width: 48px;
+                border-radius: 20px;
+            }
+            .hand-box .hand-label {
+                font-size: 0.45rem;
+                letter-spacing: 1px;
+            }
+            .hand-box .hand-number {
+                font-size: 0.55rem;
+            }
+            .hands-container {
+                gap: 8px;
+            }
+            .game-status {
+                font-size: 0.9rem;
+                min-height: 2rem;
+            }
+            .btn {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+                min-width: 36px;
+                border-radius: 30px;
+            }
+            .btn-run {
+                min-width: 32px;
+                padding: 5px 0;
+                font-size: 0.8rem;
+            }
+            .btn-ok {
+                padding: 6px 20px;
+                font-size: 0.85rem;
+                min-width: 70px;
+            }
+            .btn-risk {
+                font-size: 0.55rem;
+                padding: 3px 10px;
+            }
+            .btn-row {
+                gap: 4px;
+            }
+            .top-bar .game-title {
+                font-size: 0.75rem;
+                letter-spacing: 1px;
+            }
+            .top-bar .game-title .ball-icon {
+                width: 18px;
+                height: 18px;
+            }
+            .top-bar .game-title .ball-icon::after {
+                width: 4px;
+                height: 4px;
+            }
+            .music-btn,
+            .stats-btn {
+                padding: 3px 8px 3px 6px;
+                font-size: 0.75rem;
+                gap: 3px;
+            }
+            .music-btn .icon,
+            .stats-btn .icon {
+                font-size: 1rem;
+            }
+            .commentary .log {
+                max-height: 60px;
+            }
+            .commentary .log-item {
+                font-size: 0.55rem;
+                padding: 1px 4px;
+                gap: 4px;
+            }
+            .commentary .log-item .ball-num {
+                min-width: 14px;
+                font-size: 0.4rem;
+            }
+            .commentary .log-item .log-run {
+                font-size: 0.65rem;
+                min-width: 14px;
+            }
+            .summary-card {
+                padding: 20px 14px 24px;
+                border-radius: 28px;
+            }
+            .summary-card .result-icon {
+                font-size: 2.2rem;
+            }
+            .summary-card .result-title {
+                font-size: 1.2rem;
+            }
+            .summary-card .score-line .item .num {
+                font-size: 1.3rem;
+            }
+            .summary-card .score-line {
+                gap: 14px;
+            }
+            .summary-card .btn-ok {
+                padding: 6px 24px;
+                font-size: 0.8rem;
+            }
+            .summary-card .summary-stats {
+                font-size: 0.55rem;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .target-indicator {
+                font-size: 0.6rem;
+                padding: 2px 10px;
+            }
+            .target-indicator .target-number {
+                font-size: 0.85rem;
+            }
+            .stats-bar {
+                gap: 6px;
+                padding: 3px 8px;
+                border-radius: 14px;
+            }
+            .stats-bar .stat-item {
+                font-size: 0.5rem;
+                gap: 3px;
+            }
+            .stats-bar .stat-item .stat-value {
+                font-size: 0.6rem;
+                min-width: 14px;
+            }
+            .player-name-bar input {
+                font-size: 0.65rem;
+                padding: 3px 10px;
+                min-width: 80px;
+                max-width: 120px;
+            }
+            .player-name-bar .name-label {
+                font-size: 0.55rem;
+            }
+            .difficulty-bar .diff-label {
+                font-size: 0.5rem;
+            }
+            .diff-btn {
+                font-size: 0.5rem;
+                padding: 2px 8px;
+            }
+            .stats-modal .stats-card {
+                padding: 18px 14px 22px;
+                border-radius: 28px;
+            }
+            .stats-modal .stats-card h3 {
+                font-size: 0.9rem;
+            }
+            .stats-modal .stats-card .stat-grid .stat-item {
+                font-size: 0.65rem;
+                padding: 3px 0;
+            }
+            .stats-modal .stats-card .close-stats {
+                font-size: 0.7rem;
+                padding: 8px;
+            }
+            .stats-modal .stats-card .reset-stats {
+                font-size: 0.5rem;
+                padding: 4px;
+            }
+        }
+
+        /* ---- Utility ---- */
+        .text-center {
+            text-align: center;
+        }
+        .mt-1 {
+            margin-top: 4px;
+        }
+        .mt-2 {
+            margin-top: 8px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(160, 220, 140, 0.12);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Particles -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Flash overlay -->
+    <div class="flash-overlay" id="flashOverlay"></div>
+
+    <!-- Wicket effect -->
+    <div class="wicket-effect" id="wicketEffect">
+        <div class="stump"></div>
+        <div class="stump"></div>
+        <div class="stump"></div>
+    </div>
+
+    <!-- Match Summary Overlay -->
+    <div class="summary-overlay" id="summaryOverlay">
+        <div class="summary-card">
+            <div class="result-icon" id="resultIcon">🏆</div>
+            <div class="result-title" id="resultTitle">You Won!</div>
+            <div class="result-sub" id="resultSub">Great batting performance</div>
+            <div class="score-line">
+                <div class="item">
+                    <span class="label">🧑 You</span>
+                    <span class="num user" id="finalYourScore">0</span>
+                </div>
+                <div class="item">
+                    <span class="label">🤖 Computer</span>
+                    <span class="num comp" id="finalCompScore">0</span>
+                </div>
+            </div>
+            <div class="summary-stats">
+                <span>⚡ SR: <span class="stat-val" id="finalSR">—</span></span>
+                <span>📊 Eco: <span class="stat-val" id="finalEco">—</span></span>
+                <span>🏏 Balls: <span class="stat-val" id="finalBalls">0</span></span>
+            </div>
+            <button class="btn btn-ok" id="summaryOkBtn">🔄 Play Again</button>
+        </div>
+    </div>
+
+    <!-- Stats Modal -->
+    <div class="stats-modal" id="statsModal">
+        <div class="stats-card">
+            <h3>📊 Career Statistics</h3>
+            <div class="stat-grid" id="statsGrid">
+                <div class="stat-item"><span class="label">Matches</span><span class="value" id="statMatches">0</span></div>
+                <div class="stat-item"><span class="label">Wins</span><span class="value" id="statWins">0</span></div>
+                <div class="stat-item"><span class="label">Losses</span><span class="value" id="statLosses">0</span></div>
+                <div class="stat-item"><span class="label">Ties</span><span class="value" id="statTies">0</span></div>
+                <div class="stat-item"><span class="label">Total Runs</span><span class="value high" id="statRuns">0</span></div>
+                <div class="stat-item"><span class="label">Highest Score</span><span class="value high" id="statHigh">0</span></div>
+                <div class="stat-item"><span class="label">Wickets Taken</span><span class="value" id="statWickets">0</span></div>
+                <div class="stat-item"><span class="label">Batting Avg</span><span class="value" id="statAvg">—</span></div>
+                <div class="stat-item"><span class="label">Best Bowling</span><span class="value" id="statBestBowling">—</span></div>
+                <div class="stat-item"><span class="label">Strike Rate</span><span class="value" id="statSR">—</span></div>
+            </div>
+            <button class="close-stats" id="closeStats">Close</button>
+            <button class="reset-stats" id="resetStats">Reset Statistics</button>
+        </div>
+    </div>
+
+    <!-- Main Game -->
+    <div class="game-wrapper" id="app">
+
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="game-title">
+                <span class="ball-icon"></span>
+                <span>Hand</span> Cricket
+            </div>
+            <div class="top-actions">
+                <button class="stats-btn" id="statsBtn">
+                    <span class="icon">📊</span>
+                    <span class="label">Stats</span>
+                </button>
+                <button class="music-btn" id="musicToggle" aria-label="Toggle sound">
+                    <span class="icon" id="musicIcon">🔊</span>
+                    <span class="label">Sound</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Player Name -->
+        <div class="player-name-bar">
+            <span class="name-label">👤 Player</span>
+            <input type="text" id="playerNameInput" placeholder="Enter your name" maxlength="16" />
+        </div>
+
+        <!-- Difficulty -->
+        <div class="difficulty-bar">
+            <span class="diff-label">🎯 Difficulty</span>
+            <button class="diff-btn active" data-diff="easy">Easy</button>
+            <button class="diff-btn" data-diff="medium">Medium</button>
+            <button class="diff-btn" data-diff="hard">Hard</button>
+            <button class="btn btn-risk" id="riskToggle">
+                ⚡ Powerplay
+                <span class="risk-label">2x runs or 2x loss</span>
+            </button>
+        </div>
+
+        <!-- Scoreboard -->
+        <div class="scoreboard-row">
+            <div class="score-card user-card">
+                <div class="label">🧑 <span id="playerNameDisplay">You</span></div>
+                <div class="value waiting" id="yourScore">—</div>
+                <div class="sub" id="yourSub"></div>
+            </div>
+            <div class="score-card computer-card">
+                <div class="label">🤖 Computer</div>
+                <div class="value waiting" id="computerScore">—</div>
+                <div class="sub" id="compSub"></div>
+            </div>
+        </div>
+
+        <!-- Stats Bar (wickets, overs, run rate) -->
+        <div class="stats-bar" id="statsBar">
+            <div class="stat-item">🪓 Wickets: <span class="stat-value wicket" id="wicketsDisplay">0</span></div>
+            <div class="stat-item">📦 Overs: <span class="stat-value" id="oversDisplay">0.0</span></div>
+            <div class="stat-item">⚡ Run Rate: <span class="stat-value rate" id="runRateDisplay">0.00</span></div>
+            <div class="stat-item">🏏 Balls: <span class="stat-value" id="ballsDisplay">0</span></div>
+        </div>
+
+        <!-- Target Indicator -->
+        <div class="target-indicator" id="targetIndicator">
+            🎯 Target: <span class="target-number" id="targetNumber">0</span> runs to win
+        </div>
+
+        <!-- Game Area -->
+        <div class="game-area" id="gameArea">
+
+            <!-- Status -->
+            <div class="game-status" id="gameStatus">🏏 Choose Heads or Tails</div>
+
+            <!-- Hands -->
+            <div class="hands-container">
+                <div class="hand-box">
+                    <span class="hand-label">You</span>
+                    <span class="hand-emoji" id="userHand">✋</span>
+                    <span class="hand-number" id="userHandNum">—</span>
+                </div>
+                <div class="hand-box">
+                    <span class="hand-label">Computer</span>
+                    <span class="hand-emoji" id="compHand">✋</span>
+                    <span class="hand-number" id="compHandNum">—</span>
+                </div>
+            </div>
+
+            <!-- Toss / Choice Buttons -->
+            <div class="btn-row" id="choiceGroup">
+                <button class="btn btn-primary" data-choice="heads">🪙 Heads</button>
+                <button class="btn btn-primary" data-choice="tails">🪙 Tails</button>
+            </div>
+
+            <!-- Toss Result: Bat/Bowl -->
+            <div class="btn-row" id="tossResultGroup" style="display:none;"></div>
+
+            <!-- Run Buttons -->
+            <div class="btn-row" id="runGroup" style="display:none;">
+                <button class="btn btn-run" data-run="1">1 <span class="sub-label">run</span></button>
+                <button class="btn btn-run" data-run="2">2 <span class="sub-label">runs</span></button>
+                <button class="btn btn-run" data-run="3">3 <span class="sub-label">runs</span></button>
+                <button class="btn btn-run" data-run="4">4 <span class="sub-label">runs</span></button>
+                <button class="btn btn-run" data-run="5">5 <span class="sub-label">runs</span></button>
+                <button class="btn btn-run" data-run="6">6 <span class="sub-label">runs</span></button>
+            </div>
+
+            <!-- OK / Next Button -->
+            <div class="btn-row" id="okGroup" style="display:none;">
+                <button class="btn btn-ok" id="okBtn">▶ Next</button>
+            </div>
+
+            <!-- Commentary -->
+            <div class="commentary" id="commentary">
+                <div class="header">
+                    <span>📋 Ball-by-Ball</span>
+                    <button class="clear-log" id="clearLog">Clear</button>
+                </div>
+                <div class="log" id="commentaryLog">
+                    <div class="log-item info">
+                        <span class="ball-num">●</span>
+                        <span class="log-text">🏏 Toss time! Choose Heads or Tails.</span>
+                        <span class="log-run"></span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        //  AUDIO ENGINE (Web Audio)
+        // ============================================================
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = false;
+                this.init();
+            }
+
+            init() {
+                try {
+                    this.ctx = new(window.AudioContext || window.webkitAudioContext)();
+                    this.enabled = true;
+                } catch (_) {
+                    this.enabled = false;
+                }
+            }
+
+            tone(freq, duration, type = 'sine', vol = 0.15) {
+                if (!this.enabled || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime);
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch (_) {}
+            }
+
+            click() { this.tone(600, 0.06, 'sine', 0.08); }
+            run(runs) {
+                if (runs === 4) {
+                    this.tone(880, 0.10, 'sine', 0.12);
+                    setTimeout(() => this.tone(1100, 0.12, 'sine', 0.10), 80);
+                    setTimeout(() => this.tone(1320, 0.15, 'sine', 0.08), 180);
+                } else if (runs === 6) {
+                    this.tone(1000, 0.08, 'sine', 0.12);
+                    setTimeout(() => this.tone(1200, 0.10, 'sine', 0.10), 70);
+                    setTimeout(() => this.tone(1400, 0.12, 'sine', 0.08), 150);
+                    setTimeout(() => this.tone(1600, 0.15, 'sine', 0.06), 240);
+                } else {
+                    this.tone(500 + runs * 40, 0.06, 'sine', 0.07);
+                }
+            }
+            out() {
+                this.tone(200, 0.20, 'sawtooth', 0.10);
+                setTimeout(() => this.tone(150, 0.30, 'sawtooth', 0.06), 120);
+                setTimeout(() => this.tone(100, 0.40, 'sawtooth', 0.04), 280);
+                setTimeout(() => this.tone(800, 0.30, 'sine', 0.04), 100);
+                setTimeout(() => this.tone(600, 0.40, 'sine', 0.03), 300);
+            }
+            win() {
+                [523, 659, 784, 1047].forEach((f, i) => {
+                    setTimeout(() => this.tone(f, 0.15, 'sine', 0.10), i * 100);
+                });
+                setTimeout(() => this.tone(1318, 0.30, 'sine', 0.08), 400);
+            }
+            lose() {
+                [600, 500, 400, 300].forEach((f, i) => {
+                    setTimeout(() => this.tone(f, 0.20, 'sine', 0.06), i * 120);
+                });
+            }
+            tie() {
+                [500, 600, 500, 600].forEach((f, i) => {
+                    setTimeout(() => this.tone(f, 0.10, 'sine', 0.06), i * 100);
+                });
+            }
+            resume() {
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume().catch(() => {});
+                }
+            }
+        }
+
+        const audio = new AudioEngine();
+
+        // ============================================================
+        //  DOM REFS
+        // ============================================================
+        const $ = id => document.getElementById(id);
+        const yourScoreEl = $('yourScore');
+        const computerScoreEl = $('computerScore');
+        const yourSub = $('yourSub');
+        const compSub = $('compSub');
+        const gameStatus = $('gameStatus');
+        const userHand = $('userHand');
+        const compHand = $('compHand');
+        const userHandNum = $('userHandNum');
+        const compHandNum = $('compHandNum');
+        const choiceGroup = $('choiceGroup');
+        const tossResultGroup = $('tossResultGroup');
+        const runGroup = $('runGroup');
+        const okGroup = $('okGroup');
+        const okBtn = $('okBtn');
+        const targetIndicator = $('targetIndicator');
+        const targetNumber = $('targetNumber');
+        const commentaryLog = $('commentaryLog');
+        const clearLogBtn = $('clearLog');
+        const summaryOverlay = $('summaryOverlay');
+        const finalYourScore = $('finalYourScore');
+        const finalCompScore = $('finalCompScore');
+        const resultIcon = $('resultIcon');
+        const resultTitle = $('resultTitle');
+        const resultSub = $('resultSub');
+        const summaryOkBtn = $('summaryOkBtn');
+        const flashOverlay = $('flashOverlay');
+        const wicketEffect = $('wicketEffect');
+        const statsBtn = $('statsBtn');
+        const statsModal = $('statsModal');
+        const closeStats = $('closeStats');
+        const resetStats = $('resetStats');
+        const playerNameInput = $('playerNameInput');
+        const playerNameDisplay = $('playerNameDisplay');
+        const riskToggle = $('riskToggle');
+        const wicketsDisplay = $('wicketsDisplay');
+        const oversDisplay = $('oversDisplay');
+        const runRateDisplay = $('runRateDisplay');
+        const ballsDisplay = $('ballsDisplay');
+
+        const musicToggle = $('musicToggle');
+        const musicIcon = $('musicIcon');
+        let musicOn = false;
+
+        musicToggle.addEventListener('click', () => {
+            musicOn = !musicOn;
+            audio.resume();
+            if (musicOn) {
+                musicIcon.textContent = '🔊';
+                musicIcon.classList.remove('mute-icon');
+            } else {
+                musicIcon.textContent = '🔇';
+                musicIcon.classList.add('mute-icon');
+            }
+        });
+        musicIcon.classList.add('mute-icon');
+
+        // ============================================================
+        //  HAND EMOJI MAPPING
+        // ============================================================
+        const HAND_EMOJIS = { 0: '✊', 1: '☝️', 2: '✌️', 3: '🖐️', 4: '🤚', 5: '🖐️', 6: '✊' };
+        const HAND_LABELS = { 0: '6', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6' };
+
+        // ============================================================
+        //  STATISTICS (localStorage)
+        // ============================================================
+        function getStats() {
+            try {
+                const raw = localStorage.getItem('handCricketStats');
+                if (raw) return JSON.parse(raw);
+            } catch (_) {}
+            return {
+                matches: 0,
+                wins: 0,
+                losses: 0,
+                ties: 0,
+                runs: 0,
+                highest: 0,
+                wickets: 0,
+                bestBowling: 0,
+                ballsFaced: 0,
+                ballsBowled: 0,
+                runsConceded: 0,
+                innings: 0,
+            };
+        }
+
+        function saveStats(stats) {
+            try {
+                localStorage.setItem('handCricketStats', JSON.stringify(stats));
+            } catch (_) {}
+        }
+
+        function updateStatsUI() {
+            const s = getStats();
+            $('statMatches').textContent = s.matches;
+            $('statWins').textContent = s.wins;
+            $('statLosses').textContent = s.losses;
+            $('statTies').textContent = s.ties;
+            $('statRuns').textContent = s.runs;
+            $('statHigh').textContent = s.highest;
+            $('statWickets').textContent = s.wickets;
+            const avg = s.innings > 0 ? (s.runs / s.innings).toFixed(1) : '—';
+            $('statAvg').textContent = avg;
+            const best = s.bestBowling > 0 ? s.bestBowling : '—';
+            $('statBestBowling').textContent = best;
+            const sr = s.ballsFaced > 0 ? ((s.runs / s.ballsFaced) * 100).toFixed(1) : '—';
+            $('statSR').textContent = sr;
+        }
+
+        function updateStatsAfterMatch(userScore, compScore, wicketsTaken, ballsBowled, runsScored, ballsFaced) {
+            const s = getStats();
+            s.matches++;
+            s.runs += runsScored;
+            s.ballsFaced += ballsFaced;
+            s.ballsBowled += ballsBowled;
+            s.runsConceded += compScore;
+            if (runsScored > s.highest) s.highest = runsScored;
+            s.wickets += wicketsTaken;
+            if (wicketsTaken > s.bestBowling) s.bestBowling = wicketsTaken;
+            s.innings++;
+
+            if (userScore > compScore) s.wins++;
+            else if (userScore < compScore) s.losses++;
+            else s.ties++;
+
+            saveStats(s);
+            updateStatsUI();
+        }
+
+        // ============================================================
+        //  GAME STATE
+        // ============================================================
+        const state = {
+            yourScore: 0,
+            computerScore: 0,
+            turn: 0,
+            isUserBatting: true,
+            isUserOut: false,
+            isComputerOut: false,
+            gameOver: false,
+            tossDecided: false,
+            waitingForOk: false,
+            target: null,
+            ballCount: 0,
+            wicketsLost: 0,
+            wicketsTaken: 0,
+            ballsBowled: 0,
+            ballsFaced: 0,
+            runsScoredInInnings: 0,
+            powerplay: false,
+            difficulty: 'easy',
+            playerName: 'You',
+        };
+
+        // ============================================================
+        //  HELPERS
+        // ============================================================
+        function playSound(snd) {
+            audio.resume();
+            if (snd === 'click') audio.click();
+            else if (snd === 'run') audio.run(1);
+            else if (snd === 'boundary') audio.run(4);
+            else if (snd === 'six') audio.run(6);
+            else if (snd === 'out') audio.out();
+            else if (snd === 'win') audio.win();
+            else if (snd === 'lose') audio.lose();
+            else if (snd === 'tie') audio.tie();
+        }
+
+        function setHands(userVal, compVal) {
+            userHand.textContent = HAND_EMOJIS[userVal] || '✋';
+            compHand.textContent = HAND_EMOJIS[compVal] || '✋';
+            userHandNum.textContent = HAND_LABELS[userVal] || '—';
+            compHandNum.textContent = HAND_LABELS[compVal] || '—';
+            userHand.classList.remove('shake', 'pop');
+            compHand.classList.remove('shake', 'pop');
+            void userHand.offsetWidth;
+            userHand.classList.add('shake');
+            compHand.classList.add('shake');
+            setTimeout(() => {
+                userHand.classList.remove('shake');
+                compHand.classList.remove('shake');
+            }, 500);
+        }
+
+        function resetHands() {
+            userHand.textContent = '✋';
+            compHand.textContent = '✋';
+            userHandNum.textContent = '—';
+            compHandNum.textContent = '—';
+            userHand.classList.remove('shake', 'pop');
+            compHand.classList.remove('shake', 'pop');
+        }
+
+        function updateScoreDisplay(animate = true) {
+            yourScoreEl.textContent = state.yourScore;
+            computerScoreEl.textContent = state.computerScore;
+            if (animate) {
+                yourScoreEl.classList.remove('pop');
+                computerScoreEl.classList.remove('pop');
+                void yourScoreEl.offsetWidth;
+                yourScoreEl.classList.add('pop');
+                computerScoreEl.classList.add('pop');
+            }
+            yourScoreEl.classList.remove('waiting');
+            computerScoreEl.classList.remove('waiting');
+
+            const player = state.playerName || 'You';
+            document.querySelector('.user-card .label').innerHTML =
+                `🧑 <span id="playerNameDisplay">${player}</span>`;
+
+            // Subtext
+            if (state.turn === 1 && state.target !== null) {
+                const need = Math.max(0, state.target - state.yourScore + 1);
+                yourSub.textContent = state.isUserBatting ?
+                    `Need ${need} to win` :
+                    `Need ${need} to win`;
+            } else {
+                yourSub.textContent = '';
+            }
+            compSub.textContent = '';
+
+            // Update stats bar
+            wicketsDisplay.textContent = state.isUserBatting ? state.wicketsLost : state.wicketsTaken;
+            const overs = Math.floor(state.ballCount / 6) + '.' + (state.ballCount % 6);
+            oversDisplay.textContent = overs;
+            ballsDisplay.textContent = state.ballCount;
+            const rr = state.ballCount > 0 ? ((state.isUserBatting ? state.yourScore : state.computerScore) / (state
+                .ballCount / 6)).toFixed(2) : '0.00';
+            runRateDisplay.textContent = rr;
+        }
+
+        function setStatus(text, cls = '') {
+            gameStatus.innerHTML = text;
+            gameStatus.className = 'game-status' + (cls ? ' ' + cls : '');
+        }
+
+        function showGroup(group, show) {
+            group.style.display = show ? 'flex' : 'none';
+        }
+
+        function resetUI() {
+            showGroup(choiceGroup, true);
+            showGroup(tossResultGroup, false);
+            showGroup(runGroup, false);
+            showGroup(okGroup, false);
+            resetHands();
+            yourScoreEl.textContent = '—';
+            computerScoreEl.textContent = '—';
+            yourScoreEl.className = 'value waiting';
+            computerScoreEl.className = 'value waiting';
+            yourSub.textContent = '';
+            compSub.textContent = '';
+            targetIndicator.classList.remove('visible');
+            setStatus('🏏 Choose Heads or Tails');
+            clearLog();
+            addLogEntry('info', '🏏 Toss time! Choose Heads or Tails.');
+            // Reset stats bar
+            wicketsDisplay.textContent = '0';
+            oversDisplay.textContent = '0.0';
+            runRateDisplay.textContent = '0.00';
+            ballsDisplay.textContent = '0';
+            // Reset powerplay UI
+            riskToggle.classList.remove('active');
+            state.powerplay = false;
+        }
+
+        function clearLog() {
+            commentaryLog.innerHTML = '';
+        }
+
+        function addLogEntry(type, text, run = null) {
+            const div = document.createElement('div');
+            div.className = `log-item ${type}`;
+            const ballNum = document.createElement('span');
+            ballNum.className = 'ball-num';
+            ballNum.textContent = state.ballCount > 0 ? `#${state.ballCount}` : '●';
+            const textSpan = document.createElement('span');
+            textSpan.className = 'log-text';
+            textSpan.textContent = text;
+            const runSpan = document.createElement('span');
+            runSpan.className = 'log-run';
+            if (run !== null && type !== 'info') {
+                runSpan.textContent = run === 0 ? 'OUT' : `+${run}`;
+            }
+            div.append(ballNum, textSpan, runSpan);
+            commentaryLog.appendChild(div);
+            commentaryLog.scrollTop = commentaryLog.scrollHeight;
+        }
+
+        function showFlash(type) {
+            flashOverlay.className = 'flash-overlay';
+            void flashOverlay.offsetWidth;
+            flashOverlay.className = `flash-overlay ${type} active`;
+            setTimeout(() => { flashOverlay.className = 'flash-overlay'; }, 900);
+        }
+
+        function showWicket() {
+            wicketEffect.className = 'wicket-effect';
+            void wicketEffect.offsetWidth;
+            wicketEffect.classList.add('active');
+            setTimeout(() => { wicketEffect.classList.remove('active'); }, 900);
+        }
+
+        function showConfetti(count = 30) {
+            const colors = ['#ffd866', '#7fdb8a', '#ff9a8a', '#90c8f0', '#f0a0d0', '#fff'];
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti-piece';
+                el.style.left = (20 + Math.random() * 60) + '%';
+                el.style.top = (10 + Math.random() * 30) + '%';
+                el.style.background = colors[Math.floor(Math.random() * colors.length)];
+                el.style.width = (4 + Math.random() * 8) + 'px';
+                el.style.height = (4 + Math.random() * 8) + 'px';
+                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                el.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+                el.style.animationDelay = (Math.random() * 0.3) + 's';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 2000);
+            }
+        }
+
+        function showRunPopup(runs, x, y, cls = '') {
+            const el = document.createElement('div');
+            el.className = `run-popup ${cls}`;
+            if (runs === 0) {
+                el.textContent = '❌ OUT!';
+                el.classList.add('out');
+            } else if (runs === 4) {
+                el.textContent = '🔥 4!';
+                el.classList.add('boundary');
+            } else if (runs === 6) {
+                el.textContent = '💥 6!';
+                el.classList.add('boundary');
+            } else {
+                el.textContent = `+${runs}`;
+            }
+            el.style.left = (x || 50) + '%';
+            el.style.top = (y || 30) + '%';
+            el.style.transform = 'translateX(-50%)';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1100);
+        }
+
+        // ---- Computer AI ----
+        function getComputerRun() {
+            const diff = state.difficulty;
+            // Base random 1-6
+            let base = Math.floor(Math.random() * 6) + 1;
+
+            if (diff === 'easy') {
+                // Easy: purely random
+                return base;
+            } else if (diff === 'medium') {
+                // Medium: slight bias toward matching common user picks
+                // We don't have user history, so we bias toward 3,4,5 which are common
+                const bias = Math.random();
+                if (bias < 0.3) {
+                    // Slightly favor middle numbers
+                    return 3 + Math.floor(Math.random() * 3);
+                }
+                return base;
+            } else { // Hard
+                // Hard: tries to anticipate based on pattern
+                // Simple strategy: if user has been playing certain numbers, try to match
+                // We track last 3 user picks in a simple way
+                if (state._userHistory && state._userHistory.length > 2) {
+                    // Look at most frequent number in history
+                    const freq = {};
+                    state._userHistory.forEach(n => { freq[n] = (freq[n] || 0) + 1; });
+                    let maxFreq = 0,
+                        mostCommon = 3;
+                    for (const [num, count] of Object.entries(freq)) {
+                        if (count > maxFreq) { maxFreq = count;
+                            mostCommon = parseInt(num); }
+                    }
+                    // 40% chance to pick the most common number
+                    if (Math.random() < 0.4) {
+                        return mostCommon;
+                    }
+                    // 30% chance to pick a number adjacent to most common
+                    if (Math.random() < 0.3) {
+                        const adj = [mostCommon - 1, mostCommon + 1].filter(n => n >= 1 && n <= 6);
+                        if (adj.length > 0) return adj[Math.floor(Math.random() * adj.length)];
+                    }
+                }
+                // Fallback: random with slight bias toward 3-5
+                if (Math.random() < 0.3) return 3 + Math.floor(Math.random() * 3);
+                return base;
+            }
+        }
+
+        // ============================================================
+        //  GAME LOGIC
+        // ============================================================
+
+        function handleToss(choice) {
+            if (state.gameOver || state.tossDecided) return;
+            playSound('click');
+
+            const compChoice = Math.random() < 0.5 ? 'heads' : 'tails';
+            const userWon = choice === compChoice;
+            state.tossDecided = true;
+
+            addLogEntry('info',
+                `🪙 You chose ${choice}, computer chose ${compChoice}. ${userWon ? 'You won!' : 'Computer won!'}`);
+
+            if (userWon) {
+                setStatus(
+                    `🎉 You won the toss! (${choice} vs ${compChoice}) — Choose to Bat or Bowl`,
+                    'win-text'
+                );
+                showGroup(choiceGroup, false);
+                showGroup(tossResultGroup, true);
+                tossResultGroup.innerHTML = `
+                        <button class="btn btn-primary" id="batBtn">🏏 Bat</button>
+                        <button class="btn btn-primary" id="bowlBtn">⚾ Bowl</button>
+                    `;
+                document.getElementById('batBtn').onclick = () => {
+                    state.isUserBatting = true;
+                    showGroup(tossResultGroup, false);
+                    startInnings();
+                };
+                document.getElementById('bowlBtn').onclick = () => {
+                    state.isUserBatting = false;
+                    showGroup(tossResultGroup, false);
+                    startInnings();
+                };
+            } else {
+                const compChoosesBat = Math.random() < 0.5;
+                state.isUserBatting = !compChoosesBat;
+                setStatus(
+                    compChoosesBat ?
+                    `🤖 Computer chose to Bat first. You will Bowl.` :
+                    `🤖 Computer chose to Bowl first. You will Bat.`,
+                    'info-text'
+                );
+                showGroup(choiceGroup, false);
+                addLogEntry('info', compChoosesBat ?
+                    '🤖 Computer chose to Bat first.' :
+                    '🤖 Computer chose to Bowl first.'
+                );
+                setTimeout(() => startInnings(), 700);
+            }
+        }
+
+        function startInnings() {
+            state.turn = 0;
+            state.yourScore = 0;
+            state.computerScore = 0;
+            state.isUserOut = false;
+            state.isComputerOut = false;
+            state.gameOver = false;
+            state.waitingForOk = false;
+            state.target = null;
+            state.ballCount = 0;
+            state.wicketsLost = 0;
+            state.wicketsTaken = 0;
+            state.ballsBowled = 0;
+            state.ballsFaced = 0;
+            state.runsScoredInInnings = 0;
+            state._userHistory = [];
+            updateScoreDisplay(false);
+            targetIndicator.classList.remove('visible');
+
+            const isBatting = state.isUserBatting;
+            setStatus(
+                isBatting ?
+                `🏏 Your turn to Bat! Choose a number (1-6)` :
+                `⚾ Your turn to Bowl! Choose a number (1-6)`,
+                'highlight'
+            );
+            showGroup(runGroup, true);
+            showGroup(okGroup, false);
+            resetHands();
+
+            addLogEntry('info', isBatting ?
+                '🏏 Innings started! You are batting.' :
+                '⚾ Innings started! You are bowling.'
+            );
+        }
+
+        function playRun(userRun) {
+            if (state.gameOver || state.waitingForOk) return;
+            if (!state.tossDecided) {
+                setStatus('⚠️ Please complete the toss first!', 'info-text');
+                return;
+            }
+            playSound('click');
+            audio.resume();
+
+            // Track user history for AI
+            if (!state._userHistory) state._userHistory = [];
+            state._userHistory.push(userRun);
+            if (state._userHistory.length > 20) state._userHistory.shift();
+
+            const compRun = getComputerRun();
+            state.ballCount++;
+            setHands(userRun, compRun);
+
+            const isBatting = state.isUserBatting;
+
+            // Check Powerplay
+            const isPowerplay = state.powerplay;
+            let multiplier = 1;
+            let riskText = '';
+            if (isPowerplay) {
+                multiplier = 2;
+                riskText = ' ⚡POWERPLAY!';
+            }
+
+            if (isBatting) {
+                if (state.isUserOut) {
+                    setStatus('⛔ You are already out!', 'out-text');
+                    return;
+                }
+                if (compRun === userRun) {
+                    // OUT! (Powerplay: lose double the runs - but since you're out, you lose the innings)
+                    state.isUserOut = true;
+                    // If powerplay, you lose double runs from your score (but you're out anyway)
+                    // We'll just show the out message
+                    playSound('out');
+                    showWicket();
+                    showFlash('out');
+                    showRunPopup(0, 50, 35);
+                    setStatus(`😵 OUT! You scored ${state.yourScore} runs`, 'out-text');
+                    addLogEntry('out', `❌ You're OUT! Bowled by ${compRun}${riskText}`, 0);
+                    state.wicketsLost++;
+                    showGroup(runGroup, false);
+                    state.waitingForOk = true;
+                    showGroup(okGroup, true);
+                    okBtn.textContent = state.turn === 0 ? '▶ Second Innings' : '📊 See Result';
+                    okBtn.onclick = () => {
+                        state.waitingForOk = false;
+                        showGroup(okGroup, false);
+                        if (state.turn === 0) {
+                            state.isUserBatting = false;
+                            state.turn = 1;
+                            state.target = state.yourScore;
+                            targetIndicator.classList.add('visible');
+                            targetNumber.textContent = state.target;
+                            setStatus(`🎯 Target: ${state.target} runs. Your turn to Bowl!`, 'highlight');
+                            showGroup(runGroup, true);
+                            addLogEntry('info', `🎯 Target set: ${state.target} runs. Bowling now.`);
+                            resetHands();
+                            // Reset powerplay for second innings
+                            state.powerplay = false;
+                            riskToggle.classList.remove('active');
+                        } else {
+                            endGame();
+                        }
+                    };
+                    return;
+                } else {
+                    let runs = userRun * multiplier;
+                    state.yourScore += runs;
+                    state.ballsFaced++;
+                    state.runsScoredInInnings += runs;
+                    updateScoreDisplay(true);
+
+                    const runType = runs === 8 ? 'six' : runs === 4 ? 'boundary' : 'run';
+                    if (runType === 'boundary') { playSound('boundary');
+                        showFlash('boundary');
+                        showConfetti(20);
+                        showRunPopup(runs, 30, 25, 'boundary'); } else if (runType === 'six') { playSound('six');
+                        showFlash('boundary');
+                        showConfetti(35);
+                        showRunPopup(runs, 30, 25, 'boundary'); } else { playSound('run');
+                        showRunPopup(runs, 30, 30, ''); }
+
+                    const logText = isPowerplay ?
+                        `🏏 You scored ${runs} (${userRun}×2)${riskText}` :
+                        `🏏 You scored ${runs}`;
+                    addLogEntry(runType === 'boundary' ? 'boundary' : 'run', logText, runs);
+
+                    if (state.turn === 1 && state.target !== null && state.yourScore > state.target) {
+                        playSound('win');
+                        showFlash('win');
+                        showConfetti(50);
+                        setStatus(`🏆 You WON! Scored ${state.yourScore} vs ${state.target}`, 'win-text');
+                        addLogEntry('info', `🏆 You WON! Scored ${state.yourScore} vs ${state.target}`);
+                        state.gameOver = true;
+                        showGroup(runGroup, false);
+                        state.waitingForOk = true;
+                        showGroup(okGroup, true);
+                        okBtn.textContent = '📊 See Result';
+                        okBtn.onclick = () => { state.waitingForOk = false;
+                            showGroup(okGroup, false);
+                            endGame(); };
+                        return;
+                    }
+                    if (state.turn === 1 && state.target !== null && state.yourScore === state.target) {
+                        playSound('tie');
+                        showFlash('lose');
+                        setStatus(`🤝 It's a Tie! ${state.yourScore} - ${state.target}`, 'tie-text');
+                        addLogEntry('info', `🤝 It's a Tie! ${state.yourScore} - ${state.target}`);
+                        state.gameOver = true;
+                        showGroup(runGroup, false);
+                        state.waitingForOk = true;
+                        showGroup(okGroup, true);
+                        okBtn.textContent = '📊 See Result';
+                        okBtn.onclick = () => { state.waitingForOk = false;
+                            showGroup(okGroup, false);
+                            endGame(); };
+                        return;
+                    }
+                    setStatus(
+                        state.turn === 1 ?
+                        `🎯 ${state.yourScore} / ${state.target} • Batting…` :
+                        `🏏 Batting… ${state.yourScore} runs`
+                    );
+                }
+            } else {
+                // Bowling
+                if (state.isComputerOut) {
+                    setStatus('⛔ Computer is already out!', 'out-text');
+                    return;
+                }
+                if (compRun === userRun) {
+                    state.isComputerOut = true;
+                    playSound('out');
+                    showWicket();
+                    showFlash('out');
+                    showRunPopup(0, 50, 65);
+                    state.wicketsTaken++;
+                    state.ballsBowled++;
+                    setStatus(`😤 Computer OUT! Scored ${state.computerScore} runs`, 'out-text');
+                    addLogEntry('out', `🤖 Computer OUT! You bowled ${userRun}${riskText}`, 0);
+                    showGroup(runGroup, false);
+                    state.waitingForOk = true;
+                    showGroup(okGroup, true);
+                    okBtn.textContent = state.turn === 0 ? '▶ Second Innings' : '📊 See Result';
+                    okBtn.onclick = () => {
+                        state.waitingForOk = false;
+                        showGroup(okGroup, false);
+                        if (state.turn === 0) {
+                            state.isUserBatting = true;
+                            state.turn = 1;
+                            state.target = state.computerScore;
+                            targetIndicator.classList.add('visible');
+                            targetNumber.textContent = state.target;
+                            setStatus(`🎯 Target: ${state.target} runs. Your turn to Bat!`, 'highlight');
+                            showGroup(runGroup, true);
+                            addLogEntry('info', `🎯 Target set: ${state.target} runs. Batting now.`);
+                            resetHands();
+                            state.powerplay = false;
+                            riskToggle.classList.remove('active');
+                        } else {
+                            endGame();
+                        }
+                    };
+                    return;
+                } else {
+                    let runs = compRun * multiplier;
+                    state.computerScore += runs;
+                    state.ballsBowled++;
+                    updateScoreDisplay(true);
+
+                    const runType = runs === 8 ? 'six' : runs === 4 ? 'boundary' : 'run';
+                    if (runType === 'boundary') { playSound('boundary');
+                        showFlash('boundary');
+                        showConfetti(15);
+                        showRunPopup(runs, 70, 65, 'boundary'); } else if (runType === 'six') { playSound('six');
+                        showFlash('boundary');
+                        showConfetti(25);
+                        showRunPopup(runs, 70, 65, 'boundary'); } else { playSound('run');
+                        showRunPopup(runs, 70, 65, ''); }
+
+                    const logText = isPowerplay ?
+                        `🤖 Computer scored ${runs} (${compRun}×2)${riskText}` :
+                        `🤖 Computer scored ${runs}`;
+                    addLogEntry(runType === 'boundary' ? 'boundary' : 'run', logText, runs);
+
+                    if (state.turn === 1 && state.target !== null && state.computerScore > state.target) {
+                        playSound('lose');
+                        showFlash('lose');
+                        setStatus(`😞 You Lost! Computer scored ${state.computerScore} vs ${state.target}`, 'lose-text');
+                        addLogEntry('info', `😞 You Lost! Computer scored ${state.computerScore} vs ${state.target}`);
+                        state.gameOver = true;
+                        showGroup(runGroup, false);
+                        state.waitingForOk = true;
+                        showGroup(okGroup, true);
+                        okBtn.textContent = '📊 See Result';
+                        okBtn.onclick = () => { state.waitingForOk = false;
+                            showGroup(okGroup, false);
+                            endGame(); };
+                        return;
+                    }
+                    if (state.turn === 1 && state.target !== null && state.computerScore === state.target) {
+                        playSound('tie');
+                        showFlash('lose');
+                        setStatus(`🤝 It's a Tie! ${state.computerScore} - ${state.target}`, 'tie-text');
+                        addLogEntry('info', `🤝 It's a Tie! ${state.computerScore} - ${state.target}`);
+                        state.gameOver = true;
+                        showGroup(runGroup, false);
+                        state.waitingForOk = true;
+                        showGroup(okGroup, true);
+                        okBtn.textContent = '📊 See Result';
+                        okBtn.onclick = () => { state.waitingForOk = false;
+                            showGroup(okGroup, false);
+                            endGame(); };
+                        return;
+                    }
+                    setStatus(
+                        state.turn === 1 ?
+                        `🎯 ${state.computerScore} / ${state.target} • Bowling…` :
+                        `⚾ Bowling… ${state.computerScore} runs`
+                    );
+                }
+            }
+
+            // Update stats bar after each ball
+            updateScoreDisplay(false);
+        }
+
+        function endGame() {
+            if (state.gameOver && summaryOverlay.classList.contains('visible')) return;
+            state.gameOver = true;
+            showGroup(runGroup, false);
+            showGroup(okGroup, false);
+
+            const user = state.yourScore;
+            const comp = state.computerScore;
+            let result = '';
+            let icon = '';
+            let title = '';
+            let sub = '';
+
+            // Calculate stats for this match
+            const runsScored = state.isUserBatting ? state.yourScore : 0;
+            const ballsFaced = state.isUserBatting ? state.ballCount : 0;
+            const wicketsTaken = state.isUserBatting ? 0 : state.wicketsTaken;
+            const ballsBowled = state.isUserBatting ? 0 : state.ballCount;
+
+            // Update career stats
+            updateStatsAfterMatch(user, comp, wicketsTaken, ballsBowled, runsScored, ballsFaced);
+
+            if (user > comp) {
+                result = 'win';
+                icon = '🏆';
+                title = 'You Won!';
+                sub = 'Great performance! 🎉';
+                playSound('win');
+                showFlash('win');
+                showConfetti(60);
+            } else if (user < comp) {
+                result = 'lose';
+                icon = '😞';
+                title = 'You Lost';
+                sub = 'Better luck next time!';
+                playSound('lose');
+                showFlash('lose');
+            } else {
+                result = 'tie';
+                icon = '🤝';
+                title = "It's a Tie!";
+                sub = 'What a close match!';
+                playSound('tie');
+                showFlash('lose');
+            }
+
+            // Show summary
+            finalYourScore.textContent = user;
+            finalCompScore.textContent = comp;
+            resultIcon.textContent = icon;
+            resultTitle.textContent = title;
+            resultTitle.className = `result-title ${result}`;
+            resultSub.textContent = sub;
+
+            // Extra stats in summary
+            const sr = ballsFaced > 0 ? ((runsScored / ballsFaced) * 100).toFixed(1) : '—';
+            const eco = ballsBowled > 0 ? ((comp / (ballsBowled / 6)).toFixed(2)) : '—';
+            $('finalSR').textContent = sr;
+            $('finalEco').textContent = eco;
+            $('finalBalls').textContent = state.ballCount;
+
+            summaryOverlay.classList.add('visible');
+            addLogEntry('info', `📊 Match ended: ${title} (${user} - ${comp})`);
+        }
+
+        function resetGame() {
+            state.yourScore = 0;
+            state.computerScore = 0;
+            state.turn = 0;
+            state.isUserBatting = true;
+            state.isUserOut = false;
+            state.isComputerOut = false;
+            state.gameOver = false;
+            state.tossDecided = false;
+            state.waitingForOk = false;
+            state.target = null;
+            state.ballCount = 0;
+            state.wicketsLost = 0;
+            state.wicketsTaken = 0;
+            state.ballsBowled = 0;
+            state.ballsFaced = 0;
+            state.runsScoredInInnings = 0;
+            state._userHistory = [];
+            state.powerplay = false;
+            riskToggle.classList.remove('active');
+            summaryOverlay.classList.remove('visible');
+            resetUI();
+            showGroup(choiceGroup, true);
+            showGroup(tossResultGroup, false);
+            showGroup(runGroup, false);
+            showGroup(okGroup, false);
+            targetIndicator.classList.remove('visible');
+            document.querySelectorAll('.btn-row.temp-choice').forEach(el => el.remove());
+            resetHands();
+            clearLog();
+            addLogEntry('info', '🏏 New game! Choose Heads or Tails.');
+            setStatus('🏏 Choose Heads or Tails');
+            updateStatsUI();
+        }
+
+        // ============================================================
+        //  EVENT BINDING
+        // ============================================================
+
+        choiceGroup.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const choice = btn.dataset.choice;
+                if (choice) handleToss(choice);
+            });
+        });
+
+        runGroup.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const run = parseInt(btn.dataset.run, 10);
+                if (!isNaN(run)) playRun(run);
+            });
+        });
+
+        clearLogBtn.addEventListener('click', () => {
+            clearLog();
+            addLogEntry('info', '📋 Log cleared.');
+        });
+
+        summaryOkBtn.addEventListener('click', resetGame);
+
+        // ---- Difficulty ----
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.difficulty = btn.dataset.diff;
+                addLogEntry('info', `🎯 Difficulty set to ${btn.textContent}`);
+            });
+        });
+
+        // ---- Player Name ----
+        playerNameInput.addEventListener('input', () => {
+            const name = playerNameInput.value.trim() || 'You';
+            state.playerName = name;
+            playerNameDisplay.textContent = name;
+            document.querySelector('.user-card .label').innerHTML =
+                `🧑 <span id="playerNameDisplay">${name}</span>`;
+        });
+        // Set default
+        state.playerName = 'You';
+
+        // ---- Powerplay Toggle ----
+        riskToggle.addEventListener('click', () => {
+            if (state.gameOver || state.tossDecided === false || state.waitingForOk) {
+                setStatus('⚠️ Powerplay can only be toggled during active play!', 'info-text');
+                return;
+            }
+            state.powerplay = !state.powerplay;
+            riskToggle.classList.toggle('active');
+            addLogEntry('info', state.powerplay ?
+                '⚡ Powerplay ACTIVATED! Runs are doubled, but OUT means double loss!' :
+                '⚡ Powerplay DEACTIVATED.'
+            );
+            setStatus(
+                state.powerplay ?
+                '⚡ POWERPLAY ACTIVE! 2x runs or 2x loss on OUT!' :
+                '⚡ Powerplay off. Normal play.',
+                'highlight'
+            );
+        });
+
+        // ---- Stats Modal ----
+        statsBtn.addEventListener('click', () => {
+            updateStatsUI();
+            statsModal.classList.add('visible');
+        });
+
+        closeStats.addEventListener('click', () => {
+            statsModal.classList.remove('visible');
+        });
+
+        statsModal.addEventListener('click', (e) => {
+            if (e.target === statsModal) statsModal.classList.remove('visible');
+        });
+
+        resetStats.addEventListener('click', () => {
+            if (confirm('Reset all career statistics?')) {
+                localStorage.removeItem('handCricketStats');
+                updateStatsUI();
+                addLogEntry('info', '📊 Career statistics reset.');
+            }
+        });
+
+        // ============================================================
+        //  KEYBOARD SHORTCUTS
+        // ============================================================
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (key >= '1' && key <= '6') {
+                const run = parseInt(key, 10);
+                if (!state.gameOver && state.tossDecided && !state.waitingForOk &&
+                    (runGroup.style.display !== 'none' && runGroup.style.display !== '')) {
+                    playRun(run);
+                    e.preventDefault();
+                }
+            }
+            if (key === 'h' || key === 'H') {
+                if (!state.tossDecided) handleToss('heads');
+                e.preventDefault();
+            }
+            if (key === 't' || key === 'T') {
+                if (!state.tossDecided) handleToss('tails');
+                e.preventDefault();
+            }
+            if ((key === 'Enter' || key === ' ') && state.waitingForOk && okGroup.style.display !== 'none') {
+                okBtn.click();
+                e.preventDefault();
+            }
+            if (key === 'r' || key === 'R') {
+                if (state.gameOver || summaryOverlay.classList.contains('visible')) {
+                    resetGame();
+                    e.preventDefault();
+                }
+            }
+            if (key === 'p' || key === 'P') {
+                if (!state.gameOver && state.tossDecided && !state.waitingForOk) {
+                    riskToggle.click();
+                    e.preventDefault();
+                }
+            }
+        });
+
+        // Click anywhere to resume audio context
+        document.addEventListener('click', () => { audio.resume(); });
+
+        // ============================================================
+        //  INIT
+        // ============================================================
+        resetUI();
+        updateStatsUI();
+
+        console.log('🏏 Hand Cricket Pro loaded!');
+        console.log('🎮 Controls: 1-6 for runs, H/T for toss, Enter for OK, R to reset.');
+        console.log('⚡ P to toggle Powerplay (2x runs/risk)');
+        console.log('🎯 Difficulty: Easy/Medium/Hard affects computer AI.');
+        console.log('📊 Stats are saved automatically in your browser.');
+    </script>
+
+</body>
+</html>
