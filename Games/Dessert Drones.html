@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Desert Drone</title>
+	<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg: #1a1207;
+			--fg: #f0e6d0;
+			--muted: #8a7a5a;
+			--accent: #e6a820;
+			--card: rgba(26, 18, 7, 0.88);
+			--border: rgba(230, 168, 32, 0.3);
+			--danger: #e64040
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box
+		}
+
+		body {
+			overflow: hidden;
+			background: var(--bg);
+			font-family: 'Rajdhani', sans-serif;
+			color: var(--fg);
+			user-select: none
+		}
+
+		canvas#gc {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			display: block
+		}
+
+		#hud {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			padding: 14px 20px;
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			pointer-events: none;
+			z-index: 10;
+			opacity: 0;
+			transition: opacity .5s
+		}
+
+		#hud.show {
+			opacity: 1
+		}
+
+		.hi {
+			background: var(--card);
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			padding: 7px 16px;
+			backdrop-filter: blur(12px);
+			min-width: 80px;
+			text-align: center
+		}
+
+		.hl {
+			font-size: 10px;
+			text-transform: uppercase;
+			letter-spacing: 2px;
+			color: var(--muted);
+			font-weight: 700
+		}
+
+		.hv {
+			font-family: 'Orbitron', monospace;
+			font-size: 20px;
+			font-weight: 900;
+			color: var(--accent)
+		}
+
+		.lives-row {
+			display: flex;
+			gap: 6px;
+			justify-content: center;
+			margin-top: 3px
+		}
+
+		.ldot {
+			width: 11px;
+			height: 11px;
+			border-radius: 50%;
+			background: var(--accent);
+			box-shadow: 0 0 8px rgba(230, 168, 32, 0.5);
+			transition: all .3s
+		}
+
+		.ldot.off {
+			background: var(--muted);
+			opacity: .25;
+			box-shadow: none
+		}
+
+		#comboBox {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -60%);
+			font-family: 'Orbitron', monospace;
+			font-size: 28px;
+			font-weight: 900;
+			color: var(--accent);
+			text-shadow: 0 0 30px rgba(230, 168, 32, 0.6);
+			pointer-events: none;
+			z-index: 12;
+			opacity: 0;
+			transition: opacity .2s
+		}
+
+		#comboBox.show {
+			opacity: 1;
+			animation: cpop .3s ease-out
+		}
+
+		@keyframes cpop {
+			0% {
+				transform: translate(-50%, -60%) scale(.5);
+				opacity: 0
+			}
+
+			60% {
+				transform: translate(-50%, -60%) scale(1.15);
+				opacity: 1
+			}
+
+			100% {
+				transform: translate(-50%, -60%) scale(1)
+			}
+		}
+
+		#dmgFlash {
+			position: fixed;
+			inset: 0;
+			background: radial-gradient(ellipse at center, transparent 30%, rgba(230, 64, 64, 0.4));
+			pointer-events: none;
+			z-index: 14;
+			opacity: 0;
+			transition: opacity .08s
+		}
+
+		#vig {
+			position: fixed;
+			inset: 0;
+			pointer-events: none;
+			z-index: 7;
+			background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.55))
+		}
+
+		.ov {
+			position: fixed;
+			inset: 0;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			z-index: 100;
+			background: radial-gradient(ellipse at 70% 30%, rgba(230, 168, 32, 0.1)0%, transparent 60%), rgba(10, 6, 2, 0.94);
+			backdrop-filter: blur(24px);
+			transition: opacity .5s, visibility .5s
+		}
+
+		.ov.hide {
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none
+		}
+
+		.gt {
+			font-family: 'Orbitron', monospace;
+			font-size: clamp(28px, 7vw, 64px);
+			font-weight: 900;
+			color: var(--accent);
+			text-shadow: 0 0 50px rgba(230, 168, 32, 0.35);
+			letter-spacing: 4px
+		}
+
+		.gs {
+			font-size: 15px;
+			color: var(--muted);
+			letter-spacing: 6px;
+			text-transform: uppercase;
+			margin: 4px 0 30px
+		}
+
+		.inst {
+			background: var(--card);
+			border: 1px solid var(--border);
+			border-radius: 14px;
+			padding: 20px 30px;
+			margin-bottom: 28px;
+			max-width: 400px;
+			width: 90%
+		}
+
+		.inst h3 {
+			font-family: 'Orbitron', monospace;
+			font-size: 12px;
+			color: var(--accent);
+			letter-spacing: 3px;
+			margin-bottom: 8px
+		}
+
+		.inst p {
+			font-size: 14px;
+			line-height: 2;
+			color: var(--fg)
+		}
+
+		.kb {
+			display: inline-block;
+			background: rgba(230, 168, 32, 0.12);
+			border: 1px solid var(--border);
+			border-radius: 4px;
+			padding: 1px 7px;
+			font-family: 'Orbitron', monospace;
+			font-size: 10px;
+			color: var(--accent)
+		}
+
+		.btn {
+			font-family: 'Orbitron', monospace;
+			font-size: 14px;
+			font-weight: 700;
+			letter-spacing: 3px;
+			text-transform: uppercase;
+			padding: 13px 40px;
+			border: 2px solid var(--accent);
+			background: rgba(230, 168, 32, 0.08);
+			color: var(--accent);
+			border-radius: 8px;
+			cursor: pointer;
+			transition: all .25s
+		}
+
+		.btn:hover,
+		.btn:focus-visible {
+			background: var(--accent);
+			color: var(--bg);
+			box-shadow: 0 0 40px rgba(230, 168, 32, 0.35);
+			outline: none
+		}
+
+		.fs {
+			font-family: 'Orbitron', monospace;
+			font-size: clamp(40px, 10vw, 80px);
+			font-weight: 900;
+			color: var(--accent);
+			text-shadow: 0 0 60px rgba(230, 168, 32, 0.45)
+		}
+
+		.sl {
+			font-size: 12px;
+			letter-spacing: 5px;
+			text-transform: uppercase;
+			color: var(--muted);
+			margin-bottom: 2px
+		}
+
+		.sb {
+			margin-bottom: 22px;
+			font-size: 15px;
+			color: var(--muted)
+		}
+
+		.mhint {
+			display: none;
+			font-size: 11px;
+			color: var(--muted);
+			margin-top: 12px;
+			letter-spacing: 1px
+		}
+
+		@media(pointer:coarse) {
+			.mhint {
+				display: block
+			}
+		}
+
+		@media(max-width:600px) {
+			.hi {
+				padding: 5px 10px;
+				min-width: 65px
+			}
+
+			.hv {
+				font-size: 16px
+			}
+
+			.hl {
+				font-size: 8px
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<canvas id="gc"></canvas>
+	<div id="vig"></div>
+	<div id="dmgFlash"></div>
+
+	<div id="hud">
+		<div class="hi">
+			<div class="hl">Score</div>
+			<div class="hv" id="hScore">0</div>
+		</div>
+		<div class="hi">
+			<div class="hl">Speed</div>
+			<div class="hv" id="hSpeed">0</div>
+		</div>
+		<div class="hi">
+			<div class="hl">Distance</div>
+			<div class="hv" id="hDist">0</div>
+		</div>
+		<div class="hi">
+			<div class="hl">Integrity</div>
+			<div class="lives-row" id="hLives"></div>
+		</div>
+	</div>
+	<div id="comboBox"></div>
+
+	<div class="ov" id="scrStart">
+		<div class="gt">DESERT DRONE</div>
+		<div class="gs">Golden Sands Mission</div>
+		<div class="inst">
+			<h3>Mission Brief</h3>
+			<p>
+				<span class="kb">W</span> <span class="kb">A</span> <span class="kb">S</span> <span class="kb">D</span> or Arrows — steer<br>
+				<span class="kb">SPACE</span> ascend &nbsp; <span class="kb">SHIFT</span> descend<br><br>
+				Collect golden orbs for points.<br>
+				Dodge rock pillars. Build combos!
+			</p>
+		</div>
+		<button class="btn" id="btnStart">Launch Drone</button>
+		<div class="mhint">Touch and drag to steer on mobile</div>
+	</div>
+
+	<div class="ov hide" id="scrOver">
+		<div class="sl">Mission Complete</div>
+		<div class="fs" id="fScore">0</div>
+		<div class="sb" id="fDist">Distance: 0m</div>
+		<button class="btn" id="btnRestart">Fly Again</button>
+	</div>
+
+	<script type="importmap">
+		{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+	<script type="module">
+		import * as THREE from 'three';
+		/* ========== RENDERER ========== */
+		const canvas = document.getElementById('gc');
+		const renderer = new THREE.WebGLRenderer({
+			canvas,
+			antialias: true
+		});
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+		renderer.toneMapping = THREE.ACESFilmicToneMapping;
+		renderer.toneMappingExposure = 1.15;
+		const scene = new THREE.Scene();
+		scene.fog = new THREE.Fog(0xc9983a, 40, 130);
+		const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 300);
+		/* ========== LIGHTS ========== */
+		scene.add(new THREE.AmbientLight(0xfff0d0, 0.35));
+		scene.add(new THREE.HemisphereLight(0xffeedd, 0x8b6914, 0.55));
+		const sun = new THREE.DirectionalLight(0xfff5e0, 1.6);
+		sun.position.set(25, 45, -15);
+		sun.castShadow = true;
+		sun.shadow.mapSize.set(1024, 1024);
+		sun.shadow.camera.near = 1;
+		sun.shadow.camera.far = 120;
+		sun.shadow.camera.left = -35;
+		sun.shadow.camera.right = 35;
+		sun.shadow.camera.top = 35;
+		sun.shadow.camera.bottom = -35;
+		scene.add(sun);
+		scene.add(sun.target);
+		/* ========== SKY ========== */
+		const skyMat = new THREE.ShaderMaterial({
+			side: THREE.BackSide,
+			depthWrite: false,
+			uniforms: {
+				uTop: {
+					value: new THREE.Color(0x3a7ab8)
+				},
+				uMid: {
+					value: new THREE.Color(0xd4a854)
+				},
+				uBot: {
+					value: new THREE.Color(0xc99030)
+				}
+			},
+			vertexShader: `varying vec3 vWP;void main(){vWP=(modelMatrix*vec4(position,1.0)).xyz;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+			fragmentShader: `uniform vec3 uTop,uMid,uBot;varying vec3 vWP;void main(){float h=normalize(vWP).y;vec3 c=h>0.0?mix(uMid,uTop,pow(h,0.5)):mix(uMid,uBot,pow(-h,0.3));gl_FragColor=vec4(c,1.0);}`
+		});
+		scene.add(new THREE.Mesh(new THREE.SphereGeometry(200, 32, 24), skyMat));
+		/* Sun sphere + glow */
+		const sunSp = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 16), new THREE.MeshBasicMaterial({
+			color: 0xffee88
+		}));
+		sunSp.position.set(60, 55, -120);
+		scene.add(sunSp);
+		const sunGl = new THREE.Mesh(new THREE.SphereGeometry(9, 16, 16), new THREE.MeshBasicMaterial({
+			color: 0xffdd66,
+			transparent: true,
+			opacity: 0.18
+		}));
+		sunGl.position.copy(sunSp.position);
+		scene.add(sunGl);
+		/* ========== DESERT TEXTURE ========== */
+		function makeDesertTex() {
+			const s = 512,
+				c = document.createElement('canvas');
+			c.width = c.height = s;
+			const x = c.getContext('2d');
+			x.fillStyle = '#c49a3a';
+			x.fillRect(0, 0, s, s);
+			x.strokeStyle = '#d1a84a';
+			x.lineWidth = 0.6;
+			const sp = s / 10;
+			for (let i = 0; i <= s; i += sp) {
+				x.beginPath();
+				x.moveTo(i, 0);
+				x.lineTo(i, s);
+				x.stroke();
+				x.beginPath();
+				x.moveTo(0, i);
+				x.lineTo(s, i);
+				x.stroke();
+			}
+			const id = x.getImageData(0, 0, s, s);
+			for (let i = 0; i < id.data.length; i += 4) {
+				const n = (Math.random() - 0.5) * 18;
+				id.data[i] = Math.max(0, Math.min(255, id.data[i] + n));
+				id.data[i + 1] = Math.max(0, Math.min(255, id.data[i + 1] + n));
+				id.data[i + 2] = Math.max(0, Math.min(255, id.data[i + 2] + n));
+			}
+			x.putImageData(id, 0, 0);
+			const t = new THREE.CanvasTexture(c);
+			t.wrapS = t.wrapT = THREE.RepeatWrapping;
+			t.repeat.set(6, 6);
+			return t;
+		}
+		const desertTex = makeDesertTex();
+		/* ========== GROUND CHUNKS ========== */
+		const chunks = [];
+		const CHUNK_D = 100,
+			NUM_CHUNKS = 4;
+
+		function makeChunk(z) {
+			const g = new THREE.PlaneGeometry(80, CHUNK_D, 60, 60);
+			const p = g.attributes.position;
+			for (let i = 0; i < p.count; i++) {
+				const lx = p.getX(i),
+					ly = p.getY(i);
+				p.setZ(i, Math.sin(lx * 0.12) * Math.cos(ly * 0.08) * 2.2 + Math.sin(lx * 0.25 + 1.3) * 0.8 + Math.sin(lx * 0.04) * 2.5);
+			}
+			g.computeVertexNormals();
+			const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
+				map: desertTex,
+				roughness: 0.92,
+				metalness: 0
+			}));
+			m.rotation.x = -Math.PI / 2;
+			m.position.set(0, -0.5, z);
+			m.receiveShadow = true;
+			scene.add(m);
+			return m;
+		}
+		for (let i = 0; i < NUM_CHUNKS; i++) chunks.push(makeChunk(-i * CHUNK_D));
+		/* Decorative dunes */
+		const duneMat = new THREE.MeshStandardMaterial({
+			color: 0xc99a3a,
+			roughness: 0.95,
+			flatShading: true
+		});
+		const duneObjs = [];
+		for (let i = 0; i < 35; i++) {
+			const d = new THREE.Mesh(new THREE.ConeGeometry(5 + Math.random() * 4, 2 + Math.random() * 2, 7), duneMat);
+			d.position.set((Math.random() - 0.5) * 70, -0.5, -i * 30 - Math.random() * 20);
+			d.scale.set(1 + Math.random() * 1.5, 0.4 + Math.random() * 0.6, 1 + Math.random() * 1.5);
+			d.receiveShadow = true;
+			scene.add(d);
+			duneObjs.push(d);
+		}
+		/* ========== DRONE MODEL (from SVG) ========== */
+		const rotorRefs = [];
+		const drone = (() => {
+			const g = new THREE.Group();
+			const bM = new THREE.MeshStandardMaterial({
+				color: 0x1a1a1a,
+				metalness: 0.85,
+				roughness: 0.15
+			});
+			const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.5, 6, 12), bM);
+			body.rotation.z = Math.PI / 2;
+			body.castShadow = true;
+			g.add(body);
+			const tp = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.035, 0.18), bM);
+			tp.position.y = 0.16;
+			tp.castShadow = true;
+			g.add(tp);
+			const lns = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8),
+				new THREE.MeshStandardMaterial({
+					color: 0x3388dd,
+					metalness: 0.95,
+					roughness: 0.05,
+					emissive: 0x1a3366,
+					emissiveIntensity: 0.6
+				}));
+			lns.position.set(0.34, -0.03, 0);
+			g.add(lns);
+			const corners = [{
+				x: 1,
+				z: 1
+			}, {
+				x: 1,
+				z: -1
+			}, {
+				x: -1,
+				z: 1
+			}, {
+				x: -1,
+				z: -1
+			}];
+			const aMat = new THREE.MeshStandardMaterial({
+				color: 0x2a2a2a,
+				metalness: 0.6,
+				roughness: 0.3
+			});
+			const ledC = [0x00ff44, 0x00ff44, 0xff2200, 0xff2200];
+			corners.forEach((c, idx) => {
+				const reach = 0.78,
+					ex = c.x * reach,
+					ez = c.z * reach;
+				const aLen = Math.max(0.01, Math.sqrt(ex * ex + ez * ez));
+				const arm = new THREE.Mesh(new THREE.BoxGeometry(aLen, 0.032, 0.032), aMat);
+				arm.position.set(ex / 2, 0.05, ez / 2);
+				arm.rotation.y = Math.atan2(-c.z, c.x);
+				arm.castShadow = true;
+				g.add(arm);
+				const mot = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.07, 8), aMat);
+				mot.position.set(ex, 0.065, ez);
+				mot.castShadow = true;
+				g.add(mot);
+				const rg = new THREE.Group();
+				rg.position.set(ex, 0.1, ez);
+				const blG = new THREE.BoxGeometry(0.48, 0.006, 0.04);
+				const blM = new THREE.MeshStandardMaterial({
+					color: 0x666666,
+					metalness: 0.4,
+					roughness: 0.5,
+					transparent: true,
+					opacity: 0.75
+				});
+				rg.add(new THREE.Mesh(blG, blM));
+				const b2 = new THREE.Mesh(blG, blM);
+				b2.rotation.y = Math.PI / 2;
+				rg.add(b2);
+				const disc = new THREE.Mesh(new THREE.CircleGeometry(0.24, 20),
+					new THREE.MeshStandardMaterial({
+						color: 0x999999,
+						transparent: true,
+						opacity: 0.07,
+						side: THREE.DoubleSide
+					}));
+				disc.rotation.x = -Math.PI / 2;
+				disc.position.y = 0.004;
+				rg.add(disc);
+				g.add(rg);
+				rotorRefs.push(rg);
+				const led = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 6),
+					new THREE.MeshStandardMaterial({
+						color: ledC[idx],
+						emissive: ledC[idx],
+						emissiveIntensity: 3
+					}));
+				led.position.set(c.x * 0.22, -0.06, c.z * 0.22);
+				g.add(led);
+				const pl = new THREE.PointLight(ledC[idx], 0.25, 2.5);
+				pl.position.copy(led.position);
+				g.add(pl);
+			});
+			const sl = new THREE.SpotLight(0xfff5d0, 1.5, 18, Math.PI / 6, 0.6, 1);
+			sl.position.set(0, -0.2, 0);
+			sl.target.position.set(0, -6, -3);
+			g.add(sl);
+			g.add(sl.target);
+			return g;
+		})();
+		scene.add(drone);
+		/* ========== OBSTACLES ========== */
+		const obsPool = [],
+			obsActive = [];
+
+		function makeObs() {
+			const g = new THREE.Group();
+			const segs = 2 + Math.floor(Math.random() * 4),
+				br = 0.45 + Math.random() * 0.5;
+			let cy = 0;
+			for (let i = 0; i < segs; i++) {
+				const r = Math.max(0.08, br * (1 - i * 0.13) + (Math.random() - 0.5) * 0.15);
+				const h = 1.2 + Math.random() * 2.2;
+				const sm = new THREE.MeshStandardMaterial({
+					color: new THREE.Color().setHSL(0.08 + Math.random() * 0.04, 0.28, 0.22 + Math.random() * 0.1),
+					roughness: 0.95,
+					metalness: 0,
+					flatShading: true
+				});
+				const s = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(0.08, r * 0.82), r, h, 6 + Math.floor(Math.random() * 4)), sm);
+				s.position.y = cy + h / 2;
+				s.rotation.y = Math.random() * Math.PI;
+				s.castShadow = true;
+				g.add(s);
+				cy += h;
+			}
+			const wl = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), new THREE.MeshStandardMaterial({
+				color: 0xff3300,
+				emissive: 0xff3300,
+				emissiveIntensity: 2
+			}));
+			wl.position.y = cy + 0.1;
+			g.add(wl);
+			g.add(new THREE.PointLight(0xff3300, 0.5, 4));
+			g.children[g.children.length - 1].position.y = cy + 0.1;
+			g.userData = {
+				height: cy,
+				type: 'obstacle'
+			};
+			g.visible = false;
+			scene.add(g);
+			return g;
+		}
+		for (let i = 0; i < 22; i++) obsPool.push(makeObs());
+
+		function spawnObs(z) {
+			let o = obsPool.find(x => !x.visible);
+			if (!o) {
+				o = makeObs();
+				obsPool.push(o);
+			}
+			o.position.set((Math.random() - 0.5) * 22, 0, z + (Math.random() - 0.5) * 4);
+			o.visible = true;
+			o.userData.active = true;
+			obsActive.push(o);
+		}
+		/* ========== COLLECTIBLES ========== */
+		const colPool = [],
+			colActive = [];
+
+		function makeCol() {
+			const g = new THREE.Group();
+			g.add(new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 1), new THREE.MeshStandardMaterial({
+				color: 0xffcc00,
+				metalness: 0.9,
+				roughness: 0.1,
+				emissive: 0xffaa00,
+				emissiveIntensity: 0.6
+			})));
+			g.add(new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.018, 8, 24), new THREE.MeshStandardMaterial({
+				color: 0xffdd44,
+				metalness: 0.8,
+				roughness: 0.2,
+				emissive: 0xffaa00,
+				emissiveIntensity: 0.35
+			})));
+			g.add(new THREE.PointLight(0xffaa00, 0.8, 5));
+			g.userData = {
+				type: 'collectible',
+				active: true
+			};
+			g.visible = false;
+			scene.add(g);
+			return g;
+		}
+		for (let i = 0; i < 30; i++) colPool.push(makeCol());
+
+		function spawnCol(z) {
+			let c = colPool.find(x => !x.visible);
+			if (!c) {
+				c = makeCol();
+				colPool.push(c);
+			}
+			c.position.set((Math.random() - 0.5) * 20, 1.8 + Math.random() * 6, z + (Math.random() - 0.5) * 6);
+			c.visible = true;
+			c.userData.active = true;
+			colActive.push(c);
+		}
+		/* ========== PARTICLES ========== */
+		const PCOUNT = 500;
+		const pGeo = new THREE.BufferGeometry();
+		const pPos = new Float32Array(PCOUNT * 3);
+		for (let i = 0; i < PCOUNT; i++) {
+			pPos[i * 3] = (Math.random() - 0.5) * 70;
+			pPos[i * 3 + 1] = Math.random() * 18;
+			pPos[i * 3 + 2] = (Math.random() - 0.5) * 120;
+		}
+		pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+		const sandP = new THREE.Points(pGeo, new THREE.PointsMaterial({
+			color: 0xd9b36b,
+			size: 0.14,
+			transparent: true,
+			opacity: 0.3,
+			sizeAttenuation: true,
+			depthWrite: false
+		}));
+		scene.add(sandP);
+		/* Dust trail */
+		const DCOUNT = 60,
+			dGeo = new THREE.BufferGeometry(),
+			dPos = new Float32Array(DCOUNT * 3);
+		for (let i = 0; i < DCOUNT; i++) dPos[i * 3 + 1] = -200;
+		dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3));
+		const dustT = new THREE.Points(dGeo, new THREE.PointsMaterial({
+			color: 0xd9b36b,
+			size: 0.16,
+			transparent: true,
+			opacity: 0.2,
+			sizeAttenuation: true,
+			depthWrite: false
+		}));
+		scene.add(dustT);
+		let dIdx = 0;
+		/* Collect FX rings */
+		const fxRings = [];
+
+		function spawnFx(pos) {
+			const r = new THREE.Mesh(new THREE.RingGeometry(0.08, 0.14, 20), new THREE.MeshBasicMaterial({
+				color: 0xffcc00,
+				transparent: true,
+				opacity: 1,
+				side: THREE.DoubleSide
+			}));
+			r.position.copy(pos);
+			r.lookAt(camera.position);
+			r.userData = {
+				age: 0
+			};
+			scene.add(r);
+			fxRings.push(r);
+		}
+		/* ========== GAME STATE ========== */
+		let score = 0,
+			lives = 3,
+			speed = 0.3,
+			maxSpd = 1.3,
+			dist = 0;
+		let state = 'start',
+			inv = false,
+			invT = 0,
+			combo = 0,
+			comboT = 0,
+			shakeI = 0,
+			spawnZ = -30;
+		const HOVER_Y = 4,
+			clock = new THREE.Clock(false);
+		const droneVel = new THREE.Vector3();
+		/* ========== DOM REFS ========== */
+		const $hud = document.getElementById('hud'),
+			$score = document.getElementById('hScore');
+		const $speed = document.getElementById('hSpeed'),
+			$dist = document.getElementById('hDist');
+		const $lives = document.getElementById('hLives'),
+			$combo = document.getElementById('comboBox');
+		const $dmg = document.getElementById('dmgFlash'),
+			$start = document.getElementById('scrStart');
+		const $over = document.getElementById('scrOver'),
+			$fScore = document.getElementById('fScore');
+		const $fDist = document.getElementById('fDist');
+
+		function buildLives() {
+			$lives.innerHTML = '';
+			for (let i = 0; i < 3; i++) {
+				const d = document.createElement('div');
+				d.className = 'ldot' + (i >= lives ? ' off' : '');
+				$lives.appendChild(d);
+			}
+		}
+		buildLives();
+		let comboTimer = null;
+
+		function showCombo(txt) {
+			$combo.textContent = txt;
+			$combo.classList.remove('show');
+			void $combo.offsetWidth;
+			$combo.classList.add('show');
+			clearTimeout(comboTimer);
+			comboTimer = setTimeout(() => $combo.classList.remove('show'), 900);
+		}
+		/* ========== CONTROLS ========== */
+		const keys = {};
+		window.addEventListener('keydown', e => {
+			keys[e.code] = true;
+			if (e.code === 'Space') e.preventDefault();
+		});
+		window.addEventListener('keyup', e => keys[e.code] = false);
+		let touchActive = false,
+			touchDX = 0,
+			touchDY = 0,
+			touchSX = 0,
+			touchSY = 0;
+		canvas.addEventListener('touchstart', e => {
+			e.preventDefault();
+			touchActive = true;
+			const t = e.touches[0];
+			touchSX = t.clientX;
+			touchSY = t.clientY;
+			touchDX = 0;
+			touchDY = 0;
+		}, {
+			passive: false
+		});
+		canvas.addEventListener('touchmove', e => {
+			e.preventDefault();
+			const t = e.touches[0];
+			touchDX = (t.clientX - touchSX) / window.innerWidth * 3;
+			touchDY = (t.clientY - touchSY) / window.innerHeight * 3;
+		}, {
+			passive: false
+		});
+		canvas.addEventListener('touchend', () => {
+			touchActive = false;
+			touchDX = 0;
+			touchDY = 0;
+		});
+		/* ========== GAME FLOW ========== */
+		function startGame() {
+			score = 0;
+			lives = 3;
+			speed = 0.3;
+			dist = 0;
+			inv = false;
+			invT = 0;
+			combo = 0;
+			comboT = 0;
+			shakeI = 0;
+			spawnZ = -30;
+			drone.position.set(0, HOVER_Y, 0);
+			drone.rotation.set(0, 0, 0);
+			droneVel.set(0, 0, 0);
+			drone.visible = true;
+			obsActive.forEach(o => {
+				o.visible = false;
+				o.userData.active = false;
+			});
+			obsActive.length = 0;
+			colActive.forEach(c => {
+				c.visible = false;
+				c.userData.active = false;
+			});
+			colActive.length = 0;
+			fxRings.forEach(r => scene.remove(r));
+			fxRings.length = 0;
+			for (let z = -30; z > -250; z -= 11) {
+				if (Math.random() > 0.35) spawnObs(z);
+				if (Math.random() > 0.25) spawnCol(z);
+			}
+			buildLives();
+			$start.classList.add('hide');
+			$over.classList.add('hide');
+			$hud.classList.add('show');
+			state = 'play';
+			clock.start();
+		}
+
+		function gameOver() {
+			state = 'over';
+			$fScore.textContent = score;
+			$fDist.textContent = 'Distance: ' + Math.floor(dist) + 'm';
+			$over.classList.remove('hide');
+		}
+
+		function takeDmg() {
+			if (inv) return;
+			lives--;
+			buildLives();
+			$dmg.style.opacity = '1';
+			setTimeout(() => $dmg.style.opacity = '0', 220);
+			shakeI = 0.6;
+			inv = true;
+			invT = 2.2;
+			if (lives <= 0) gameOver();
+		}
+
+		function collectOrb() {
+			comboT = 2.2;
+			combo++;
+			const mul = Math.min(combo, 8);
+			const pts = 100 * mul;
+			score += pts;
+			showCombo(mul > 1 ? `+${pts}  x${mul}` : `+${pts}`);
+		}
+		document.getElementById('btnStart').addEventListener('click', startGame);
+		document.getElementById('btnRestart').addEventListener('click', startGame);
+		/* ========== RESIZE ========== */
+		window.addEventListener('resize', () => {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		});
+		/* ========== MAIN LOOP ========== */
+		let elapsed = 0;
+
+		function animate() {
+			requestAnimationFrame(animate);
+			const dt = Math.min(clock.getDelta(), 0.05);
+			elapsed += dt;
+			/* Rotor spin always */
+			rotorRefs.forEach((r, i) => {
+				r.rotation.y += 0.55 * (state === 'play' ? 1 : 0.3);
+			});
+			/* Collectible spin always */
+			colActive.forEach(c => {
+				if (c.visible) {
+					c.rotation.y += 0.03;
+					c.children[1].rotation.x += 0.02;
+				}
+			});
+			/* FX rings update */
+			for (let i = fxRings.length - 1; i >= 0; i--) {
+				const r = fxRings[i];
+				r.userData.age += dt;
+				r.scale.setScalar(1 + r.userData.age * 6);
+				r.material.opacity = Math.max(0, 1 - r.userData.age * 2.5);
+				if (r.userData.age > 0.5) {
+					scene.remove(r);
+					fxRings.splice(i, 1);
+				}
+			}
+			if (state === 'play') {
+				/* --- INPUT --- */
+				const accel = 12,
+					damping = 0.92,
+					maxV = 8;
+				if (keys['KeyW'] || keys['ArrowUp']) droneVel.z -= accel * dt;
+				if (keys['KeyS'] || keys['ArrowDown']) droneVel.z += accel * dt;
+				if (keys['KeyA'] || keys['ArrowLeft']) droneVel.x -= accel * dt;
+				if (keys['KeyD'] || keys['ArrowRight']) droneVel.x += accel * dt;
+				if (keys['Space']) droneVel.y += accel * dt;
+				if (keys['ShiftLeft'] || keys['ShiftRight']) droneVel.y -= accel * dt;
+				if (touchActive) {
+					droneVel.x += touchDX * 8 * dt;
+					droneVel.z -= touchDY * 8 * dt;
+				}
+				droneVel.multiplyScalar(damping);
+				droneVel.clampLength(0, maxV);
+				drone.position.add(droneVel.clone().multiplyScalar(dt));
+				drone.position.x = THREE.MathUtils.clamp(drone.position.x, -14, 14);
+				drone.position.y = THREE.MathUtils.clamp(drone.position.y, 1.2, 12);
+				drone.position.z = THREE.MathUtils.clamp(drone.position.z, -6, 6);
+				/* Tilt based on velocity */
+				drone.rotation.x = THREE.MathUtils.lerp(drone.rotation.x, droneVel.z * 0.06, 0.08);
+				drone.rotation.z = THREE.MathUtils.lerp(drone.rotation.z, -droneVel.x * 0.08, 0.08);
+				drone.rotation.y = 0;
+				/* Hover bob */
+				drone.position.y += Math.sin(elapsed * 3) * 0.003;
+				/* --- SCROLL WORLD --- */
+				speed = Math.min(maxSpd, 0.3 + dist * 0.0004);
+				const scrollZ = speed * dt * 14;
+				chunks.forEach(ch => {
+					ch.position.z += scrollZ;
+					if (ch.position.z > CHUNK_D) ch.position.z -= NUM_CHUNKS * CHUNK_D;
+				});
+				duneObjs.forEach(d => {
+					d.position.z += scrollZ;
+					if (d.position.z > 50) d.position.z -= 35 * 30;
+				});
+				/* Sand particles */
+				const pp = sandP.geometry.attributes.position;
+				for (let i = 0; i < PCOUNT; i++) {
+					let z = pp.getZ(i) + scrollZ;
+					if (z > 60) {
+						z -= 120;
+						pp.setX(i, (Math.random() - 0.5) * 70);
+						pp.setY(i, Math.random() * 18);
+					}
+					pp.setZ(i, z);
+				}
+				pp.needsUpdate = true;
+				/* Dust trail */
+				if (Math.random() < 0.6) {
+					const di = (dIdx++) % DCOUNT;
+					dPos[di * 3] = drone.position.x + (Math.random() - 0.5) * 0.4;
+					dPos[di * 3 + 1] = drone.position.y - 0.3 + Math.random() * 0.2;
+					dPos[di * 3 + 2] = drone.position.z + 0.5 + Math.random() * 0.3;
+				}
+				for (let i = 0; i < DCOUNT; i++) {
+					dPos[i * 3 + 1] -= dt * 1.5;
+					dPos[i * 3 + 2] += scrollZ * 0.5;
+				}
+				dustT.geometry.attributes.position.needsUpdate = true;
+				dist += scrollZ;
+				score += Math.floor(scrollZ * 5);
+				/* Obstacles */
+				for (let i = obsActive.length - 1; i >= 0; i--) {
+					const o = obsActive[i];
+					o.position.z += scrollZ;
+					if (o.position.z > 20) {
+						o.visible = false;
+						o.userData.active = false;
+						obsActive.splice(i, 1);
+						continue;
+					}
+					/* Collision */
+					if (!inv) {
+						const dx = drone.position.x - o.position.x,
+							dz = drone.position.z - o.position.z;
+						const hz = Math.abs(dx) < 1.2,
+							hz2 = Math.abs(dz) < 1.0;
+						const dy = drone.position.y - o.userData.height;
+						if (hz && hz2 && dy < 1.0 && dy > -0.5) {
+							takeDmg();
+							spawnObs(o.position.z - 40 - Math.random() * 20);
+							o.visible = false;
+							o.userData.active = false;
+							obsActive.splice(i, 1);
+						}
+					}
+				}
+				/* Collectibles */
+				for (let i = colActive.length - 1; i >= 0; i--) {
+					const c = colActive[i];
+					c.position.z += scrollZ;
+					if (c.position.z > 20) {
+						c.visible = false;
+						c.userData.active = false;
+						colActive.splice(i, 1);
+						continue;
+					}
+					const d = drone.position.distanceTo(c.position);
+					if (d < 1.3) {
+						collectOrb();
+						spawnFx(c.position.clone());
+						c.visible = false;
+						c.userData.active = false;
+						colActive.splice(i, 1);
+					}
+				}
+				/* Combo decay */
+				comboT -= dt;
+				if (comboT <= 0) combo = 0;
+				/* Invincibility */
+				if (inv) {
+					invT -= dt;
+					if (invT <= 0) inv = false;
+					drone.visible = Math.floor(elapsed * 12) % 2 === 0;
+				}
+				/* Spawn new stuff */
+				spawnZ -= scrollZ;
+				if (spawnZ < -40) {
+					spawnZ += 10 + Math.random() * 6;
+					if (Math.random() > 0.3) spawnObs(spawnZ);
+					if (Math.random() > 0.2) spawnCol(spawnZ);
+				}
+				/* Move sun light with drone */
+				sun.position.x = drone.position.x + 25;
+				sun.target.position.copy(drone.position);
+				/* Camera follow */
+				const camTarget = new THREE.Vector3(drone.position.x * 0.35, drone.position.y + 3.5, drone.position.z + 9);
+				camera.position.lerp(camTarget, 0.06);
+				if (shakeI > 0.005) {
+					camera.position.x += (Math.random() - 0.5) * shakeI;
+					camera.position.y += (Math.random() - 0.5) * shakeI;
+					shakeI *= 0.88;
+				}
+				camera.lookAt(drone.position.x * 0.5, drone.position.y - 0.5, drone.position.z - 15);
+				/* HUD */
+				$score.textContent = score;
+				$speed.textContent = (speed * 30).toFixed(0);
+				$dist.textContent = Math.floor(dist);
+				/* Sky dome follow */
+				skyMat.uniforms.uMid.value.setHSL(0.1, 0.6, Math.max(0.3, 0.58 - dist * 0.00008));
+			} else {
+				/* Idle: slow camera orbit for start/gameover screens */
+				camera.position.set(Math.sin(elapsed * 0.15) * 6, 5 + Math.sin(elapsed * 0.2) * 0.5, 9 + Math.cos(elapsed * 0.15) * 2);
+				camera.lookAt(0, 2, -15);
+				drone.position.y = HOVER_Y + Math.sin(elapsed * 2) * 0.15;
+				drone.rotation.x = Math.sin(elapsed * 1.5) * 0.04;
+				drone.rotation.z = Math.cos(elapsed * 1.2) * 0.05;
+				drone.visible = true;
+			}
+			renderer.render(scene, camera);
+		}
+		/* Kick off */
+		animate();
+	</script>
+</body>
+
+</html>

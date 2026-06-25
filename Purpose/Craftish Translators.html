@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CraftScript 170114 – Advanced Translator</title>
+    <style>
+        :root {
+            --bg: #06050e;
+            --surface: rgba(17, 14, 35, 0.65);
+            --surface-solid: #111021;
+            --surface-hover: rgba(26, 22, 48, 0.8);
+            --text: #ede8ff;
+            --text-secondary: #b3aad6;
+            --accent: #f97316;
+            --accent-light: #fb923c;
+            --accent-glow: rgba(249, 115, 22, 0.3);
+            --danger: #f43f5e;
+            --success: #22c55e;
+            --code-bg: rgba(8, 6, 22, 0.65);
+            --border: rgba(255, 255, 255, 0.07);
+            --border-focus: rgba(249, 115, 22, 0.5);
+            --shadow-card: 0 20px 50px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset;
+            --shadow-glow: 0 0 100px rgba(249,115,22,0.12);
+            --radius: 24px;
+            --radius-sm: 14px;
+            --radius-xs: 10px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+            --input-bg: rgba(255,255,255,0.04);
+            --input-border: rgba(255,255,255,0.1);
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f3fd;
+            --surface: rgba(255, 255, 255, 0.65);
+            --surface-solid: #ffffff;
+            --surface-hover: rgba(255, 255, 255, 0.9);
+            --text: #1a1435;
+            --text-secondary: #625a8c;
+            --accent: #ea580c;
+            --accent-light: #f97316;
+            --accent-glow: rgba(234, 88, 12, 0.15);
+            --code-bg: rgba(245, 242, 252, 0.7);
+            --border: rgba(0, 0, 0, 0.06);
+            --border-focus: rgba(234, 88, 12, 0.4);
+            --shadow-card: 0 20px 50px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.03) inset;
+            --shadow-glow: 0 0 80px rgba(234,88,12,0.06);
+            --input-bg: rgba(0,0,0,0.02);
+            --input-border: rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            transition: background 0.4s, color 0.3s;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .bg-orb { position: absolute; border-radius: 50%; filter: blur(120px); animation: orbFloat 18s infinite ease-in-out; opacity: 0.7; }
+        .bg-orb:nth-child(1) { width: 500px; height: 500px; background: rgba(249,115,22,0.15); top: -10%; left: -5%; animation-duration: 20s; }
+        .bg-orb:nth-child(2) { width: 400px; height: 400px; background: rgba(139,92,246,0.1); bottom: -10%; right: -5%; animation-duration: 22s; }
+        .bg-orb:nth-child(3) { width: 300px; height: 300px; background: rgba(245,158,11,0.1); top: 60%; left: 60%; animation-duration: 19s; }
+        @keyframes orbFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(60px,-50px) scale(1.1); } 66% { transform: translate(-30px,40px) scale(0.9); } }
+
+        .app-container { position: relative; z-index: 1; width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 16px; }
+        .header { display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
+        .logo { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.25rem; }
+        .logo-icon { width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), #c2410c); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 8px 20px var(--accent-glow); color: white; }
+        .header-actions { display: flex; gap: 6px; }
+        .btn-icon { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); backdrop-filter: blur(12px); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all var(--transition); position: relative; font-size: 0.95rem; }
+        .btn-icon:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-focus); transform: translateY(-2px); }
+        .btn-icon .tooltip { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); font-size: 0.65rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; white-space: nowrap; pointer-events: none; opacity: 0; transition: 0.2s; }
+        .btn-icon:hover .tooltip { opacity: 1; }
+
+        .card { background: var(--surface); backdrop-filter: blur(24px); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 20px; transition: all 0.3s; }
+
+        .auth-card .logo-area { text-align: center; margin-bottom: 8px; }
+        .auth-card .logo-circle { width: 56px; height: 56px; border-radius: 18px; background: linear-gradient(135deg, var(--accent), var(--accent-light)); display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; color: white; margin-bottom: 12px; box-shadow: 0 10px 25px var(--accent-glow); }
+        .auth-card h2 { font-size: 1.5rem; letter-spacing: -0.02em; }
+        .auth-card p { color: var(--text-secondary); font-size: 0.9rem; }
+
+        .floating-group { position: relative; margin-bottom: 4px; }
+        .floating-group input { width: 100%; padding: 14px 40px 14px 16px; border: 1.5px solid var(--input-border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); font-size: 0.95rem; font-family: var(--font); outline: none; transition: all var(--transition); }
+        .floating-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+        .floating-group label { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 0.85rem; color: var(--text-secondary); pointer-events: none; transition: all 0.2s ease; background: transparent; padding: 0 4px; }
+        .floating-group input:focus + label, .floating-group input:not(:placeholder-shown) + label { top: -8px; left: 12px; font-size: 0.7rem; color: var(--accent); background: var(--surface-solid); border-radius: 4px; }
+        .floating-group .toggle-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; padding: 6px; }
+        .floating-group .toggle-btn:hover { color: var(--accent); }
+        .error-msg { font-size: 0.72rem; color: var(--danger); margin-top: 4px; display: none; align-items: center; gap: 4px; }
+        .error-msg.visible { display: flex; }
+
+        .options-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; }
+        .remember-me { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-secondary); }
+        .remember-me input { accent-color: var(--accent); }
+        .forgot-link { color: var(--accent); font-weight: 600; cursor: pointer; }
+        .btn { padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 0.9rem; border: none; cursor: pointer; transition: all var(--transition); font-family: var(--font); display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent), #c2410c); color: white; box-shadow: 0 8px 25px var(--accent-glow); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(249,115,22,0.4); }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: var(--surface-hover); }
+
+        .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .mode-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 50px; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(249,115,22,0.1); color: var(--accent-light); border: 1px solid rgba(249,115,22,0.2); align-self: flex-start; }
+        .mode-badge.encode { background: rgba(245,158,11,0.1); color: #f59e0b; border-color: rgba(245,158,11,0.25); }
+
+        .text-areas { display: flex; flex-direction: column; gap: 14px; }
+        .text-area-wrapper label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); margin-bottom: 4px; display: block; }
+        textarea { width: 100%; min-height: 110px; padding: 14px 44px 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--code-bg); color: var(--text); font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.7; resize: vertical; transition: all var(--transition); outline: none; }
+        textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); }
+        textarea.output-area { cursor: default; }
+        .char-count { position: absolute; bottom: 10px; right: 16px; font-size: 0.65rem; color: var(--text-secondary); }
+        .btn-copy { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; transition: all var(--transition); }
+        .btn-copy.copied { color: var(--success); border-color: var(--success); }
+
+        .action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .btn-ghost { padding: 8px 16px; border-radius: 50px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; transition: all var(--transition); display: flex; align-items: center; gap: 5px; }
+        .btn-ghost:hover { border-color: var(--border-focus); color: var(--text); background: var(--surface-hover); }
+        .btn-ghost.active { border-color: var(--accent); color: var(--accent); background: rgba(249,115,22,0.1); }
+
+        .advanced-panel { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 20px; display: none; flex-direction: column; gap: 16px; }
+        .advanced-panel.open { display: flex; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; }
+        .setting-label { font-size: 0.8rem; font-weight: 500; }
+        select, input[type="text"] { padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-family: var(--font); outline: none; }
+        .toggle-switch { width: 36px; height: 20px; border-radius: 20px; background: var(--border); position: relative; cursor: pointer; transition: background 0.2s; }
+        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: 0.2s; }
+        input:checked + .toggle-switch { background: var(--accent); }
+        input:checked + .toggle-switch::after { left: 18px; }
+
+        .examples-section { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 14px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .example-chip { padding: 6px 14px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface-hover); color: var(--text); cursor: pointer; font-size: 0.75rem; transition: all var(--transition); font-family: var(--font-mono); }
+        .example-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(249,115,22,0.08); }
+
+        .history-section { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 16px 20px; max-height: 180px; overflow-y: auto; }
+        .history-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; cursor: pointer; transition: var(--transition); font-family: var(--font-mono); font-size: 0.75rem; }
+        .history-item:hover { background: var(--surface-hover); }
+
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 12px 20px; border-radius: 50px; background: var(--text); color: var(--bg); font-weight: 600; font-size: 0.8rem; animation: toastIn 0.4s ease, toastOut 0.35s 2.2s forwards; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .toast.error { background: var(--danger); color: white; }
+        .toast.success { background: var(--success); color: #000; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(60px); } }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; width: 100%; max-width: 520px; box-shadow: 0 30px 60px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 18px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { background: none; border: none; color: var(--text-secondary); font-size: 1.6rem; cursor: pointer; }
+        .modal-tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .modal-tab { flex: 1; padding: 10px; text-align: center; font-weight: 600; font-size: 0.8rem; cursor: pointer; color: var(--text-secondary); transition: 0.2s; position: relative; }
+        .modal-tab.active { color: var(--accent); }
+        .modal-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 15%; width: 70%; height: 2px; background: var(--accent); border-radius: 2px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .setting-section { margin-bottom: 20px; }
+        .setting-section h3 { font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+<div class="bg-orbs"><div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>⚙️ Settings</h2>
+            <button class="modal-close" id="closeModalBtn">&times;</button>
+        </div>
+        <div class="modal-tabs">
+            <div class="modal-tab active" data-tab="account">👤 Account</div>
+            <div class="modal-tab" data-tab="translator">🔮 Translator</div>
+            <div class="modal-tab" data-tab="data">💾 Data</div>
+        </div>
+        <div class="modal-content">
+            <!-- Account Panel -->
+            <div class="tab-panel active" id="accountPanel">
+                <div class="setting-section">
+                    <h3>✏️ Display Name</h3>
+                    <div class="floating-group"><input id="displayNameInput" type="text" placeholder=" "><label>Your name</label></div>
+                    <button class="btn btn-primary" id="updateDisplayNameBtn" style="margin-top:8px;">Update Name</button>
+                </div>
+                <div class="setting-section">
+                    <h3>🔐 Change Password</h3>
+                    <div class="floating-group"><input id="currentPassword" type="password" placeholder=" "><label>Current password</label></div>
+                    <div class="floating-group"><input id="newPassword" type="password" placeholder=" "><label>New password</label></div>
+                    <div class="floating-group"><input id="confirmNewPassword" type="password" placeholder=" "><label>Confirm new password</label></div>
+                    <div class="error-msg" id="passwordChangeError"></div>
+                    <button class="btn btn-primary" id="changePasswordBtn" style="margin-top:8px;">Update Password</button>
+                </div>
+                <div class="setting-section">
+                    <h3 style="color:var(--danger);">🗑️ Delete Account</h3>
+                    <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:8px;">Permanently remove your account and all data.</p>
+                    <button class="btn" style="background:var(--danger); color:white;" id="deleteAccountBtn">Delete My Account</button>
+                </div>
+            </div>
+
+            <!-- Translator Panel -->
+            <div class="tab-panel" id="translatorPanel">
+                <div class="setting-section">
+                    <h3>🧭 Default Mode</h3>
+                    <select id="defaultModeSelect"><option value="decode">Decode (Symbols → Text)</option><option value="encode">Encode (Text → Symbols)</option></select>
+                </div>
+                <div class="setting-section">
+                    <h3>⚡ Auto‑Translate</h3>
+                    <div class="setting-row">
+                        <span class="setting-label">Translate as you type</span>
+                        <label><input type="checkbox" id="autoTranslateToggle" checked><span class="toggle-switch"></span></label>
+                    </div>
+                </div>
+                <div class="setting-section">
+                    <h3>🔤 Font Size</h3>
+                    <select id="fontSizeSelect"><option value="small">Small</option><option value="medium" selected>Medium</option><option value="large">Large</option></select>
+                </div>
+                <div class="setting-section">
+                    <h3>🔄 Advanced Options</h3>
+                    <button class="btn-ghost" id="resetTranslatorSettingsBtn">↺ Reset to defaults</button>
+                </div>
+                <div class="setting-section">
+                    <h3>📜 History</h3>
+                    <button class="btn-ghost" id="clearTranslatorHistoryBtn">🗑️ Clear all history</button>
+                </div>
+            </div>
+
+            <!-- Data Panel -->
+            <div class="tab-panel" id="dataPanel">
+                <div class="setting-section">
+                    <h3>📤 Backup & Restore</h3>
+                    <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:8px;">Export or import all mappings, settings, and history.</p>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn-ghost" id="exportSettingsBtn">📤 Export</button>
+                        <button class="btn-ghost" id="importSettingsBtn">📥 Import</button>
+                        <input type="file" id="importFileInput" accept=".json" style="display:none;">
+                    </div>
+                </div>
+                <div class="setting-section">
+                    <h3>⚠️ Danger Zone</h3>
+                    <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:8px;">These actions remove data permanently.</p>
+                    <button class="btn-ghost" id="clearAllDataBtn" style="color:var(--danger); border-color:var(--danger);">🧹 Clear all data (factory reset)</button>
+                    <button class="btn-ghost" id="clearAllUsersBtn" style="color:var(--danger); border-color:var(--danger); margin-left:8px;">👥 Clear all users</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="app-container">
+    <header class="header">
+        <div class="logo"><div class="logo-icon">⊞</div><span>CraftScript 170114</span></div>
+        <div class="header-actions">
+            <button class="btn-icon" id="themeToggle"><span id="themeIcon">🌙</span><span class="tooltip">Theme</span></button>
+            <button class="btn-icon hidden" id="settingsBtn">⚙️<span class="tooltip">Settings</span></button>
+            <button class="btn-icon hidden" id="logoutBtn">🚪<span class="tooltip">Logout</span></button>
+        </div>
+    </header>
+
+    <!-- Auth Card -->
+    <div class="card auth-card" id="authCard">
+        <div id="loginFormContainer">
+            <div class="logo-area"><div class="logo-circle">🔐</div><h2>Welcome back</h2><p>Sign in to continue</p></div>
+            <form id="loginForm">
+                <div class="floating-group"><input type="email" id="loginEmail" placeholder=" "><label>Email</label></div>
+                <div class="error-msg" id="loginEmailError"></div>
+                <div class="floating-group"><input type="password" id="loginPassword" placeholder=" "><label>Password</label><button type="button" class="toggle-btn" id="toggleLoginPass">👁️</button></div>
+                <div class="error-msg" id="loginPassError"></div>
+                <div class="options-row">
+                    <label class="remember-me"><input type="checkbox" id="rememberMe"> Remember me</label>
+                    <span class="forgot-link" id="forgotPasswordLink">Forgot?</span>
+                </div>
+                <button type="submit" class="btn btn-primary" id="loginSubmitBtn" style="width:100%;">Sign In</button>
+            </form>
+            <p style="text-align:center; margin-top:12px;">New here? <span style="color:var(--accent); cursor:pointer;" id="goToRegister">Create account</span></p>
+        </div>
+        <div id="registerFormContainer" class="hidden">
+            <div class="logo-area"><div class="logo-circle">✨</div><h2>Join us</h2><p>Create your account</p></div>
+            <form id="registerForm">
+                <div class="floating-group"><input type="text" id="regName" placeholder=" "><label>Full name</label></div>
+                <div class="error-msg" id="regNameError"></div>
+                <div class="floating-group"><input type="email" id="regEmail" placeholder=" "><label>Email</label></div>
+                <div class="error-msg" id="regEmailError"></div>
+                <div class="floating-group"><input type="password" id="regPassword" placeholder=" "><label>Password</label><button type="button" class="toggle-btn" id="toggleRegPass">👁️</button></div>
+                <div class="error-msg" id="regPassError"></div>
+                <div class="floating-group"><input type="password" id="regConfirmPass" placeholder=" "><label>Confirm password</label></div>
+                <div class="error-msg" id="regConfirmError"></div>
+                <button type="submit" class="btn btn-primary" id="registerSubmitBtn" style="width:100%;">Create Account</button>
+            </form>
+            <p style="text-align:center; margin-top:12px;">Already have an account? <span style="color:var(--accent); cursor:pointer;" id="goToLogin">Sign in</span></p>
+        </div>
+    </div>
+
+    <!-- Translator (hidden until login) -->
+    <div id="translatorContainer" class="hidden" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card">
+            <div class="mode-badge" id="modeBadge">🔮 Decode</div>
+            <div class="text-areas">
+                <div style="position:relative;"><div class="text-area-wrapper"><label>Input</label></div>
+                    <textarea id="inputField" rows="3" placeholder="Enter symbols or text..."></textarea>
+                    <span class="char-count" id="inputCounter">0</span>
+                </div>
+                <div style="position:relative;"><div class="text-area-wrapper"><label>Output</label></div>
+                    <textarea id="outputField" class="output-area" rows="3" readonly placeholder="Translation..."></textarea>
+                    <button class="btn-copy" id="copyBtn">📋</button>
+                    <span class="char-count" id="outputCounter">0</span>
+                </div>
+            </div>
+            <div class="action-row">
+                <button class="btn btn-primary translate-btn" id="swapBtn">⇄ Swap</button>
+                <button class="btn-ghost" id="clearBtn">🗑️ Clear</button>
+                <button class="btn-ghost" id="advancedToggle">⚙️ Advanced</button>
+                <span style="margin-left:auto; font-size:0.7rem; opacity:0.6;"><kbd>Ctrl+Enter</kbd></span>
+            </div>
+        </div>
+
+        <div class="advanced-panel" id="advancedPanel">
+            <div class="setting-row"><span class="setting-label">Map lowercase</span><label><input type="checkbox" id="mapLowercase" checked><span class="toggle-switch"></span></label></div>
+            <div class="setting-row"><span class="setting-label">Unknown char (encode)</span><select id="unknownEncodeAction"><option value="keep">Keep</option><option value="remove">Remove</option><option value="replace">Replace ?</option></select></div>
+            <div class="setting-row"><span class="setting-label">Separator</span><input type="text" id="separatorInput" value=" " style="width:80px;"></div>
+            <div class="setting-row"><span class="setting-label">Skip whitespace</span><label><input type="checkbox" id="skipWhitespace" checked><span class="toggle-switch"></span></label></div>
+            <div class="setting-row"><span class="setting-label">Unknown symbol (decode)</span><select id="unknownDecodeAction"><option value="keep">Keep</option><option value="remove">Remove</option><option value="replace">Replace ?</option></select></div>
+            <button class="btn-ghost" id="resetDefaultsBtn">↺ Reset defaults</button>
+        </div>
+
+        <div class="examples-section">
+            <span style="font-weight:600; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em;">Try:</span>
+            <button class="example-chip" data-text="HELLO WORLD">HELLO WORLD</button>
+            <button class="example-chip" data-text="ABC 123">ABC 123</button>
+            <button class="example-chip" data-text="☰✦⊞⊞○ ◌ │○◈⊞◇">Decode example</button>
+            <button class="example-chip" data-text="hello world">hello</button>
+        </div>
+
+        <div class="history-section">
+            <h3 style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">📜 History</h3>
+            <div id="historyList"><div style="text-align:center; color:var(--text-secondary); font-size:0.8rem;">No translations yet</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ─────────── AUTH LOGIC ───────────
+        const authCard = document.getElementById('authCard');
+        const translatorContainer = document.getElementById('translatorContainer');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const toastContainer = document.getElementById('toastContainer');
+
+        function showToast(msg, type='') {
+            const t = document.createElement('div'); t.className = `toast ${type}`; t.textContent = msg;
+            toastContainer.appendChild(t); setTimeout(() => t.remove(), 2500);
+        }
+
+        function clearError(el) { if(el) { el.textContent = ''; el.classList.remove('visible'); } }
+        function showError(el, msg) { if(el) { el.textContent = '⚠ ' + msg; el.classList.add('visible'); } }
+
+        function getUsers() { try { return JSON.parse(localStorage.getItem('appUsers')) || {}; } catch { return {}; } }
+        function saveUsers(users) { localStorage.setItem('appUsers', JSON.stringify(users)); }
+        function userExists(email) { return getUsers()[email.toLowerCase().trim()] !== undefined; }
+        function createUser(name, email, password) {
+            const users = getUsers(); const key = email.toLowerCase().trim();
+            users[key] = { name: name.trim(), email: key, password, createdAt: new Date().toISOString() }; saveUsers(users);
+        }
+        function validateUser(email, password) {
+            const users = getUsers(); const user = users[email.toLowerCase().trim()];
+            return user && user.password === password ? user : null;
+        }
+        function saveSession(user, remember) {
+            const session = { email: user.email, name: user.name };
+            if(remember) localStorage.setItem('appSession', JSON.stringify(session));
+            else { sessionStorage.setItem('appSession', JSON.stringify(session)); localStorage.removeItem('appSession'); }
+        }
+        function getSession() {
+            let s = sessionStorage.getItem('appSession') || localStorage.getItem('appSession');
+            return s ? JSON.parse(s) : null;
+        }
+        function clearSession() { sessionStorage.removeItem('appSession'); localStorage.removeItem('appSession'); }
+
+        function showAuthUI() {
+            authCard.classList.remove('hidden'); translatorContainer.classList.add('hidden');
+            logoutBtn.classList.add('hidden'); settingsBtn.classList.add('hidden');
+            document.getElementById('loginFormContainer').classList.remove('hidden');
+            document.getElementById('registerFormContainer').classList.add('hidden');
+            const saved = localStorage.getItem('rememberedEmail');
+            if(saved) { document.getElementById('loginEmail').value = saved; document.getElementById('rememberMe').checked = true; }
+        }
+        function showTranslatorUI() {
+            authCard.classList.add('hidden'); translatorContainer.classList.remove('hidden');
+            logoutBtn.classList.remove('hidden'); settingsBtn.classList.remove('hidden');
+            if(window.initTranslator) initTranslator();
+        }
+
+        document.getElementById('goToRegister').addEventListener('click', ()=>{
+            document.getElementById('loginFormContainer').classList.add('hidden');
+            document.getElementById('registerFormContainer').classList.remove('hidden');
+        });
+        document.getElementById('goToLogin').addEventListener('click', ()=>{
+            document.getElementById('registerFormContainer').classList.add('hidden');
+            document.getElementById('loginFormContainer').classList.remove('hidden');
+        });
+        document.getElementById('toggleLoginPass').addEventListener('click', ()=>{
+            const inp = document.getElementById('loginPassword'); inp.type = inp.type==='password'?'text':'password';
+        });
+        document.getElementById('toggleRegPass').addEventListener('click', ()=>{
+            const inp = document.getElementById('regPassword'); inp.type = inp.type==='password'?'text':'password';
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPassword').value;
+            if(!email || !pass) { showToast('Fill all fields','error'); return; }
+            const user = validateUser(email, pass);
+            if(user) {
+                if(document.getElementById('rememberMe').checked) localStorage.setItem('rememberedEmail', email);
+                else localStorage.removeItem('rememberedEmail');
+                saveSession(user, document.getElementById('rememberMe').checked);
+                showTranslatorUI(); showToast('Welcome, '+user.name+'!','success');
+            } else showToast('Invalid credentials','error');
+        });
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('regName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const pass = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPass').value;
+            if(!name||!email||!pass||!confirm) { showToast('Fill all fields','error'); return; }
+            if(pass.length<6) { showToast('Password min 6 chars','error'); return; }
+            if(pass!==confirm) { showToast('Passwords mismatch','error'); return; }
+            if(userExists(email)) { showToast('Email already registered','error'); return; }
+            createUser(name, email, pass);
+            showToast('Account created! Sign in.','success');
+            document.getElementById('loginFormContainer').classList.remove('hidden');
+            document.getElementById('registerFormContainer').classList.add('hidden');
+        });
+
+        logoutBtn.addEventListener('click', ()=>{ clearSession(); showToast('Logged out','info'); showAuthUI(); });
+
+        // ─────────── SETTINGS MODAL ───────────
+        const modal = document.getElementById('settingsModal');
+        settingsBtn.addEventListener('click', ()=>{
+            // Pre-fill display name
+            const session = getSession();
+            if(session) {
+                const users = getUsers();
+                const user = users[session.email];
+                if(user) document.getElementById('displayNameInput').value = user.name || '';
+                // Load settings UI
+                document.getElementById('defaultModeSelect').value = (localStorage.getItem('craftscript_default_mode') || 'decode');
+                document.getElementById('autoTranslateToggle').checked = (localStorage.getItem('craftscript_auto_translate') !== 'false');
+                document.getElementById('fontSizeSelect').value = (localStorage.getItem('craftscript_font_size') || 'medium');
+            }
+            modal.classList.add('open');
+        });
+        document.getElementById('closeModalBtn').addEventListener('click', ()=> modal.classList.remove('open'));
+
+        // Tab switching
+        document.querySelectorAll('.modal-tab').forEach(tab => {
+            tab.addEventListener('click', ()=>{
+                document.querySelectorAll('.modal-tab').forEach(t=>t.classList.remove('active'));
+                tab.classList.add('active');
+                const target = tab.dataset.tab;
+                document.getElementById('accountPanel').classList.toggle('active', target==='account');
+                document.getElementById('translatorPanel').classList.toggle('active', target==='translator');
+                document.getElementById('dataPanel').classList.toggle('active', target==='data');
+            });
+        });
+
+        // Account actions
+        document.getElementById('updateDisplayNameBtn').addEventListener('click', ()=>{
+            const newName = document.getElementById('displayNameInput').value.trim();
+            if(!newName) { showToast('Name cannot be empty','error'); return; }
+            const session = getSession();
+            if(!session) return;
+            const users = getUsers();
+            if(users[session.email]) {
+                users[session.email].name = newName;
+                saveUsers(users);
+                session.name = newName;
+                saveSession({email: session.email, name: newName}, localStorage.getItem('appSession')?true:false);
+                showToast('Name updated!','success');
+            }
+        });
+
+        document.getElementById('changePasswordBtn').addEventListener('click', ()=>{
+            const cur = document.getElementById('currentPassword').value;
+            const newP = document.getElementById('newPassword').value;
+            const conf = document.getElementById('confirmNewPassword').value;
+            if(!cur||!newP||!conf) { showToast('Fill all fields','error'); return; }
+            if(newP.length<6) { showToast('Min 6 chars','error'); return; }
+            if(newP!==conf) { showToast('Passwords mismatch','error'); return; }
+            const email = getSession()?.email;
+            const users = getUsers();
+            if(users[email]?.password !== cur) { showToast('Wrong current password','error'); return; }
+            users[email].password = newP; saveUsers(users);
+            showToast('Password updated','success');
+        });
+        document.getElementById('deleteAccountBtn').addEventListener('click', ()=>{
+            if(!confirm('Delete account permanently?')) return;
+            const email = getSession()?.email;
+            const users = getUsers(); delete users[email]; saveUsers(users);
+            clearSession(); modal.classList.remove('open'); showAuthUI(); showToast('Account deleted','info');
+        });
+
+        // Translator settings
+        document.getElementById('defaultModeSelect').addEventListener('change', (e)=>{
+            localStorage.setItem('craftscript_default_mode', e.target.value);
+            if(window.setDefaultMode) window.setDefaultMode(e.target.value);
+        });
+        document.getElementById('autoTranslateToggle').addEventListener('change', (e)=>{
+            localStorage.setItem('craftscript_auto_translate', e.target.checked);
+            if(window.setAutoTranslate) window.setAutoTranslate(e.target.checked);
+        });
+        document.getElementById('fontSizeSelect').addEventListener('change', (e)=>{
+            localStorage.setItem('craftscript_font_size', e.target.value);
+            if(window.applyFontSize) window.applyFontSize(e.target.value);
+        });
+
+        document.getElementById('resetTranslatorSettingsBtn').addEventListener('click', ()=>{
+            if(window.resetDefaults) window.resetDefaults();
+            showToast('Translator settings reset','success');
+        });
+        document.getElementById('clearTranslatorHistoryBtn').addEventListener('click', ()=>{
+            if(window.clearHistory) { window.clearHistory(); showToast('History cleared','success'); }
+        });
+
+        // Data actions
+        document.getElementById('exportSettingsBtn').addEventListener('click', ()=>{
+            const data = { mappings: window.ENG_TO_CRAFT, settings: window.settings || {}, history: window.history || [] };
+            const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+            const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='craftscript_backup.json'; a.click();
+        });
+        document.getElementById('importSettingsBtn').addEventListener('click', ()=> document.getElementById('importFileInput').click());
+        document.getElementById('importFileInput').addEventListener('change', e=>{
+            const f=e.target.files[0]; if(!f) return;
+            const reader = new FileReader();
+            reader.onload = ev=>{
+                try{
+                    const d=JSON.parse(ev.target.result);
+                    if(d.mappings){ window.ENG_TO_CRAFT=d.mappings; const rev={}; for(const[k,v] of Object.entries(d.mappings)) rev[v]=k; rev['◌']=' '; window.CRAFT_TO_ENG=rev; window.SORTED_SYMBOLS=Object.keys(rev).sort((a,b)=>b.length-a.length); }
+                    if(d.settings){ window.settings={...window.settings,...d.settings}; if(window.saveSettings) window.saveSettings(); if(window.applyUI) window.applyUI(); }
+                    if(d.history){ window.history=d.history.slice(0,10); if(window.saveHistory) window.saveHistory(); if(window.renderHistory) window.renderHistory(); }
+                    if(window.translate) window.translate();
+                    showToast('Imported','success');
+                }catch{showToast('Invalid file','error');}
+            };
+            reader.readAsText(f);
+            e.target.value='';
+        });
+
+        document.getElementById('clearAllDataBtn').addEventListener('click', ()=>{
+            if(confirm('This will delete ALL data: users, settings, history. Are you sure?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                modal.classList.remove('open');
+                showAuthUI();
+                showToast('All data cleared','info');
+            }
+        });
+        document.getElementById('clearAllUsersBtn').addEventListener('click', ()=>{
+            if(confirm('Delete all registered users? This cannot be undone.')) {
+                localStorage.removeItem('appUsers');
+                clearSession();
+                modal.classList.remove('open');
+                showAuthUI();
+                showToast('All users removed','info');
+            }
+        });
+
+        // ─────────── TRANSLATOR (with new settings hooks) ───────────
+        window.ENG_TO_CRAFT = {
+            A:'△',B:'⊥⊤',C:'≡',D:'◇',E:'✦',F:'│',G:'□•',H:'☰',I:'I',J:'∪',K:'⬟',L:'⊞',M:'V',N:'∩',O:'○',
+            P:'⧉',Q:'⊙★',R:'◈',S:'☲',T:'↓',U:'∪',V:'∩̅',W:'⊕',X:'×',Y:':',Z:'⚡',
+            '1':'☾','2':'│','3':'║','4':'#','5':'▭','6':'⬠','7':'◆','8':'✉','9':'✧',' ':'◌'
+        };
+        window.CRAFT_TO_ENG = {}; for(const [k,v] of Object.entries(window.ENG_TO_CRAFT)) window.CRAFT_TO_ENG[v]=k;
+        window.CRAFT_TO_ENG['◌']=' ';
+        window.SORTED_SYMBOLS = Object.keys(window.CRAFT_TO_ENG).sort((a,b)=>b.length-a.length);
+
+        const defaultSettings = { mapLowercase:true, unknownEncode:'keep', separator:' ', skipWhitespace:true, unknownDecode:'keep' };
+        let settings = {...defaultSettings};
+        let isDecoding = true, history = [];
+        const MAX_HIST = 10;
+        const inputF = document.getElementById('inputField'), outputF = document.getElementById('outputField');
+        const modeBadge = document.getElementById('modeBadge');
+
+        function applyUI() {
+            document.getElementById('mapLowercase').checked = settings.mapLowercase;
+            document.getElementById('unknownEncodeAction').value = settings.unknownEncode;
+            document.getElementById('separatorInput').value = settings.separator;
+            document.getElementById('skipWhitespace').checked = settings.skipWhitespace;
+            document.getElementById('unknownDecodeAction').value = settings.unknownDecode;
+        }
+        window.loadSettings = function() {
+            try { const s = localStorage.getItem('craftscript_adv_settings'); if(s) settings = {...defaultSettings, ...JSON.parse(s)}; } catch { settings = {...defaultSettings}; }
+            applyUI();
+        };
+        window.saveSettings = ()=> localStorage.setItem('craftscript_adv_settings', JSON.stringify(settings));
+        window.settings = settings; // expose
+
+        function encode(t) { let r=[], sep=settings.separator||' '; for(let ch of t) { let target=ch; if(settings.mapLowercase&&ch>='a'&&ch<='z') target=ch.toUpperCase(); let m=window.ENG_TO_CRAFT[target]||window.ENG_TO_CRAFT[target.toUpperCase?.()]; if(m) r.push(m); else if(settings.unknownEncode==='keep') r.push(ch); else if(settings.unknownEncode==='replace') r.push('?'); } return r.join(sep); }
+        function decode(s) {
+            let sep = settings.separator?.trim()||null, tokens=[];
+            if(sep && s.includes(sep)) tokens = s.split(sep).map(t=>t.trim()).filter(t=>t);
+            else { let i=0; while(i<s.length) { if(settings.skipWhitespace&&/\s/.test(s[i])){i++;continue;} let found=false; for(let sym of window.SORTED_SYMBOLS) { if(s.startsWith(sym,i)) { tokens.push(sym); i+=sym.length; found=true; break; } } if(!found) { tokens.push(s[i]); i++; } } }
+            let out=''; for(let tok of tokens) { let eng=window.CRAFT_TO_ENG[tok]; if(eng!==undefined) out+=eng; else if(settings.unknownDecode==='keep') out+=tok; else if(settings.unknownDecode==='replace') out+='?'; } return out;
+        }
+        window.translate = function() { const inp=inputF.value; if(!inp.trim()){outputF.value=''; updateCounters(inp,'');return;} let res=isDecoding?decode(inp):encode(inp); outputF.value=res; updateCounters(inp,res); if(res&&res!==inp) addHistory({input:inp.substring(0,50),output:res.substring(0,50),dir:isDecoding?'decode':'encode'}); };
+        function updateModeUI() { modeBadge.textContent = isDecoding ? '🔮 Decode' : '📤 Encode'; modeBadge.classList.toggle('encode', !isDecoding); }
+        function swapMode(clear=true) { isDecoding=!isDecoding; updateModeUI(); if(clear){inputF.value='';outputF.value='';} translate(); }
+        function updateCounters(inp,out) { document.getElementById('inputCounter').textContent = inp.length; document.getElementById('outputCounter').textContent = out.length; }
+        function loadHistory() { try{history=JSON.parse(localStorage.getItem('craftscript_comp_hist')||'[]');}catch{history=[];} renderHistory(); }
+        function saveHistory() { localStorage.setItem('craftscript_comp_hist', JSON.stringify(history)); }
+        function addHistory(e) { history=history.filter(h=>!(h.input===e.input&&h.dir===e.dir)); history.unshift(e); if(history.length>MAX_HIST) history.length=MAX_HIST; saveHistory(); renderHistory(); }
+        function renderHistory() {
+            const el = document.getElementById('historyList');
+            if(!history.length) { el.innerHTML='<div style="text-align:center;color:var(--text-secondary);font-size:0.8rem;">No history</div>'; return; }
+            el.innerHTML = history.map((h,i)=>`<div class="history-item" data-idx="${i}"><span>${h.dir==='decode'?'🔮':'📤'}</span> <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.input}</span> <span>→</span> <span style="flex:1;overflow:hidden;text-overflow:ellipsis;">${h.output}</span></div>`).join('');
+            document.querySelectorAll('.history-item').forEach(el=> el.addEventListener('click', ()=>{ const h=history[parseInt(el.dataset.idx)]; inputF.value=h.input; if((h.dir==='decode'&&!isDecoding)||(h.dir==='encode'&&isDecoding)) swapMode(false); translate(); }));
+        }
+        window.resetDefaults = ()=>{ settings={...defaultSettings}; applyUI(); saveSettings(); translate(); };
+        window.clearHistory = ()=>{ history=[]; saveHistory(); renderHistory(); };
+        window.history = history; // expose
+
+        // New settings hooks
+        window.setDefaultMode = function(mode) { isDecoding = mode === 'decode'; updateModeUI(); };
+        window.setAutoTranslate = function(on) {
+            if(on) inputF.addEventListener('input', translate);
+            else inputF.removeEventListener('input', translate);
+        };
+        window.applyFontSize = function(size) {
+            const sizes = { small: '0.8rem', medium: '0.9rem', large: '1.1rem' };
+            document.querySelectorAll('textarea').forEach(ta => ta.style.fontSize = sizes[size] || '0.9rem');
+        };
+
+        // Apply saved preferences on load
+        const savedMode = localStorage.getItem('craftscript_default_mode') || 'decode';
+        isDecoding = savedMode === 'decode';
+        updateModeUI();
+        const autoTranslate = localStorage.getItem('craftscript_auto_translate') !== 'false';
+        if(autoTranslate) inputF.addEventListener('input', translate);
+        else inputF.removeEventListener('input', translate);
+        const savedFont = localStorage.getItem('craftscript_font_size') || 'medium';
+        window.applyFontSize(savedFont);
+
+        inputF.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){ e.preventDefault(); translate(); } });
+        document.getElementById('swapBtn').addEventListener('click', ()=>swapMode(true));
+        document.getElementById('clearBtn').addEventListener('click', ()=>{ inputF.value=''; outputF.value=''; translate(); });
+        document.getElementById('copyBtn').addEventListener('click', ()=>{
+            if(!outputF.value) return;
+            navigator.clipboard.writeText(outputF.value).then(()=>{ const b=document.getElementById('copyBtn'); b.classList.add('copied'); b.textContent='✓'; setTimeout(()=>{ b.classList.remove('copied'); b.textContent='📋'; },1200); });
+        });
+        document.getElementById('advancedToggle').addEventListener('click', ()=>{ document.getElementById('advancedPanel').classList.toggle('open'); });
+        document.getElementById('mapLowercase').addEventListener('change', e=>{ settings.mapLowercase=e.target.checked; saveSettings(); translate(); });
+        document.getElementById('unknownEncodeAction').addEventListener('change', e=>{ settings.unknownEncode=e.target.value; saveSettings(); translate(); });
+        document.getElementById('separatorInput').addEventListener('input', e=>{ settings.separator=e.target.value; saveSettings(); translate(); });
+        document.getElementById('skipWhitespace').addEventListener('change', e=>{ settings.skipWhitespace=e.target.checked; saveSettings(); translate(); });
+        document.getElementById('unknownDecodeAction').addEventListener('change', e=>{ settings.unknownDecode=e.target.value; saveSettings(); translate(); });
+        document.getElementById('resetDefaultsBtn').addEventListener('click', ()=>{ settings={...defaultSettings}; applyUI(); saveSettings(); translate(); });
+        document.querySelectorAll('.example-chip').forEach(b=> b.addEventListener('click', ()=>{ inputF.value=b.dataset.text; translate(); }));
+
+        function initTheme(){
+            const t=localStorage.getItem('craftscript_comp_theme')||'dark';
+            document.documentElement.setAttribute('data-theme',t);
+            document.getElementById('themeIcon').textContent = t==='dark'?'🌙':'☀️';
+        }
+        document.getElementById('themeToggle').addEventListener('click', ()=>{
+            const cur=document.documentElement.getAttribute('data-theme'), next=cur==='dark'?'light':'dark';
+            document.documentElement.setAttribute('data-theme',next);
+            document.getElementById('themeIcon').textContent = next==='dark'?'🌙':'☀️';
+            localStorage.setItem('craftscript_comp_theme',next);
+        });
+
+        window.initTranslator = function(){
+            loadSettings(); loadHistory(); updateModeUI(); inputF.focus();
+        };
+
+        initTheme();
+        if(getSession()) showTranslatorUI(); else showAuthUI();
+    })();
+</script>
+</body>
+</html>

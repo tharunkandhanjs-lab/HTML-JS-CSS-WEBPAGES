@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Personal Budget Tracker</title>
+  <!-- Chart.js for spending trends -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f7fa; color: #1e293b; padding: 20px; max-width: 900px; margin: auto; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+    .card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .card h3 { font-size: 14px; color: #64748b; margin-bottom: 8px; }
+    .card .amount { font-size: 28px; font-weight: 700; }
+    .income .amount { color: #10b981; }
+    .expense .amount { color: #ef4444; }
+    .budget-bar { margin: 12px 0 8px; }
+    .budget-bar label { display: flex; justify-content: space-between; font-size: 13px; }
+    .progress { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+    .progress-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    .warn { background: #f59e0b; } .danger { background: #ef4444; } .safe { background: #10b981; }
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+    .nav-tab { padding: 8px 16px; cursor: pointer; border: none; background: none; font-weight: 500; color: #64748b; }
+    .nav-tab.active { color: #0f172a; border-bottom: 3px solid #3b82f6; margin-bottom: -2px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    form { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    form label { display: block; font-size: 13px; margin-bottom: 4px; color: #475569; }
+    form input, form select, form button { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+    form button { background: #3b82f6; color: white; border: none; font-weight: 600; cursor: pointer; }
+    form button:hover { background: #2563eb; }
+    .transaction-list { list-style: none; }
+    .transaction-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .transaction-item .amount { font-weight: 600; }
+    .chart-container { margin-top: 30px; }
+    .settings-box { background: white; padding: 16px; border-radius: 12px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>💰 Advanced Budget Tracker</h1>
+
+  <!-- Summary Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <div class="card income">
+      <h3>Total Income (this month)</h3>
+      <div class="amount" id="totalIncome">0</div>
+    </div>
+    <div class="card expense">
+      <h3>Total Expenses (this month)</h3>
+      <div class="amount" id="totalExpense">0</div>
+    </div>
+    <div class="card">
+      <h3>Net Balance</h3>
+      <div class="amount" id="netBalance">0</div>
+    </div>
+  </div>
+
+  <!-- Budget Progress Bars (auto-populated) -->
+  <div class="card" id="budgetBars" style="margin-bottom:20px;">
+    <h3>📊 Monthly Budgets</h3>
+    <div id="budgetList"></div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('add')">➕ Add Transaction</button>
+    <button class="nav-tab" onclick="switchTab('view')">📋 History</button>
+    <button class="nav-tab" onclick="switchTab('settings')">⚙️ Budget Settings</button>
+  </div>
+
+  <!-- Add Transaction Form -->
+  <div class="tab-content active" id="tab-add">
+    <form id="transactionForm">
+      <label>Type</label>
+      <select id="type" required>
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+      </select>
+      <label>Amount</label>
+      <input type="number" id="amount" step="0.01" min="0.01" required>
+      <label>Category</label>
+      <select id="category" required>
+        <option value="">-- choose --</option>
+        <option value="Rent">Rent</option>
+        <option value="Food">Food</option>
+        <option value="Transport">Transport</option>
+        <option value="Entertainment">Entertainment</option>
+        <option value="Utilities">Utilities</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Salary">Salary</option>
+        <option value="Freelance">Freelance</option>
+        <option value="Other Income">Other Income</option>
+      </select>
+      <label>Account</label>
+      <select id="account" required>
+        <option value="Cash">Cash</option>
+        <option value="Bank">Bank</option>
+        <option value="Credit Card">Credit Card</option>
+      </select>
+      <label>Date</label>
+      <input type="date" id="date" required>
+      <label>Note</label>
+      <input type="text" id="note" placeholder="Optional">
+      <label style="display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" id="recurring" style="width:auto;"> 🔁 Recurring monthly
+      </label>
+      <button type="submit">Add Transaction</button>
+    </form>
+  </div>
+
+  <!-- Transaction History -->
+  <div class="tab-content" id="tab-view">
+    <div style="display:flex; gap:10px; margin-bottom:12px;">
+      <input type="month" id="monthFilter" onchange="renderHistory()" style="padding:8px; border:1px solid #cbd5e1; border-radius:8px;">
+    </div>
+    <ul class="transaction-list" id="transactionList"></ul>
+  </div>
+
+  <!-- Budget Settings -->
+  <div class="tab-content" id="tab-settings">
+    <div class="settings-box">
+      <h3>Set Monthly Budget Limits per Category</h3>
+      <div id="budgetInputs"></div>
+      <button onclick="saveBudgets()" style="margin-top:10px;">Save Budgets</button>
+    </div>
+  </div>
+
+  <!-- Spending Trend Chart -->
+  <div class="chart-container">
+    <canvas id="trendChart" height="80"></canvas>
+  </div>
+
+  <script>
+    // ----- DATA STORAGE -----
+    const STORAGE_KEY_TX = 'budget_transactions';
+    const STORAGE_KEY_BUDGETS = 'budget_limits';
+
+    function loadData(key, fallback = []) {
+      const raw = localStorage.getItem(key);
+      try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
+    }
+    function saveData(key, data) {
+      localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    let transactions = loadData(STORAGE_KEY_TX);
+    let budgets = loadData(STORAGE_KEY_BUDGETS); // { category: limit }
+
+    // ----- UTILS -----
+    function getMonthKey(date) { return date.substring(0,7); } // "YYYY-MM"
+    function getCurrentMonth() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    }
+
+    // ----- RECURRING TRANSACTIONS -----
+    // Add auto-generated recurring transactions for the current month if they don't already exist
+    function injectRecurring() {
+      const currentMonth = getCurrentMonth();
+      // Check for existing recurring templates and create a real transaction for this month if missing
+      const recurringPatterns = transactions.filter(tx => tx.recurring);
+      const existingThisMonth = new Set(
+        transactions.filter(tx => getMonthKey(tx.date) === currentMonth)
+                    .map(tx => `${tx.type}|${tx.amount}|${tx.category}|${tx.account}|${tx.note}`)
+      );
+      let added = false;
+      recurringPatterns.forEach(template => {
+        // Skip if already exists for this month
+        const key = `${template.type}|${template.amount}|${template.category}|${template.account}|${template.note}`;
+        if (!existingThisMonth.has(key)) {
+          const newTx = { 
+            type: template.type, 
+            amount: template.amount, 
+            category: template.category, 
+            account: template.account, 
+            date: `${currentMonth}-01`, // first of month
+            note: template.note + ' (auto)',
+            recurring: false // mark as non-recurring to avoid duplication
+          };
+          transactions.push(newTx);
+          added = true;
+        }
+      });
+      if (added) saveData(STORAGE_KEY_TX, transactions);
+    }
+
+    // ----- RENDER DASHBOARD -----
+    function updateDashboard() {
+      const currentMonth = getCurrentMonth();
+      const monthTx = transactions.filter(tx => getMonthKey(tx.date) === currentMonth);
+      let income = 0, expense = 0;
+      monthTx.forEach(tx => {
+        if (tx.type === 'income') income += tx.amount;
+        else expense += tx.amount;
+      });
+      document.getElementById('totalIncome').textContent = '₹' + income.toFixed(2);
+      document.getElementById('totalExpense').textContent = '₹' + expense.toFixed(2);
+      document.getElementById('netBalance').textContent = '₹' + (income - expense).toFixed(2);
+
+      // Budget progress bars
+      const budgetList = document.getElementById('budgetList');
+      budgetList.innerHTML = '';
+      for (let cat in budgets) {
+        const limit = budgets[cat];
+        const spent = monthTx.filter(tx => tx.type === 'expense' && tx.category === cat)
+                             .reduce((sum, tx) => sum + tx.amount, 0);
+        const percent = Math.min((spent / limit) * 100, 100);
+        let colorClass = 'safe';
+        if (percent > 100) colorClass = 'danger';
+        else if (percent > 80) colorClass = 'warn';
+
+        const div = document.createElement('div');
+        div.className = 'budget-bar';
+        div.innerHTML = `
+          <label><span>${cat}</span><span>₹${spent.toFixed(0)} / ₹${limit.toFixed(0)}</span></label>
+          <div class="progress"><div class="progress-fill ${colorClass}" style="width:${percent}%"></div></div>
+        `;
+        budgetList.appendChild(div);
+      }
+    }
+
+    // ----- RENDER HISTORY -----
+    function renderHistory() {
+      const monthFilter = document.getElementById('monthFilter').value || getCurrentMonth();
+      const filtered = transactions.filter(tx => getMonthKey(tx.date) === monthFilter);
+      filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
+      const list = document.getElementById('transactionList');
+      list.innerHTML = filtered.map(tx => `
+        <li class="transaction-item">
+          <div>
+            <strong>${tx.category}</strong> <small>${tx.date} (${tx.account})</small>
+            ${tx.note ? '<br><small>' + tx.note + '</small>' : ''}
+            ${tx.recurring ? ' 🔁' : ''}
+          </div>
+          <div class="amount" style="color:${tx.type==='income'?'#10b981':'#ef4444'}">
+            ${tx.type==='income'?'+':'-'}₹${tx.amount.toFixed(2)}
+          </div>
+        </li>
+      `).join('') || '<p>No transactions for this month.</p>';
+    }
+
+    // ----- CHART -----
+    let chartInstance;
+    function renderChart() {
+      // Group by month
+      const grouped = {};
+      transactions.forEach(tx => {
+        const month = getMonthKey(tx.date);
+        if (!grouped[month]) grouped[month] = { income: 0, expense: 0 };
+        if (tx.type === 'income') grouped[month].income += tx.amount;
+        else grouped[month].expense += tx.amount;
+      });
+      // Sort months
+      const months = Object.keys(grouped).sort();
+      const incomeData = months.map(m => grouped[m].income);
+      const expenseData = months.map(m => grouped[m].expense);
+
+      const ctx = document.getElementById('trendChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: months,
+          datasets: [
+            { label: 'Income', data: incomeData, borderColor: '#10b981', backgroundColor: '#10b98120', tension: 0.2 },
+            { label: 'Expenses', data: expenseData, borderColor: '#ef4444', backgroundColor: '#ef444420', tension: 0.2 }
+          ]
+        },
+        options: { responsive: true, plugins: { title: { display: true, text: 'Monthly Income vs Expenses' } } }
+      });
+    }
+
+    // ----- BUDGET SETTINGS UI -----
+    function renderBudgetSettings() {
+      const container = document.getElementById('budgetInputs');
+      const categories = ['Rent','Food','Transport','Entertainment','Utilities','Shopping'];
+      container.innerHTML = categories.map(cat => {
+        const val = budgets[cat] || '';
+        return `<label style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          ${cat} <input type="number" step="0.01" min="0" value="${val}" data-cat="${cat}" placeholder="limit" style="width:120px; padding:6px;">
+        </label>`;
+      }).join('');
+    }
+
+    function saveBudgets() {
+      const inputs = document.querySelectorAll('#budgetInputs input');
+      const newBudgets = {};
+      inputs.forEach(inp => {
+        const cat = inp.dataset.cat;
+        const val = parseFloat(inp.value);
+        if (!isNaN(val) && val > 0) newBudgets[cat] = val;
+      });
+      budgets = newBudgets;
+      saveData(STORAGE_KEY_BUDGETS, budgets);
+      updateDashboard();
+      alert('Budgets saved!');
+    }
+
+    // ----- ADD TRANSACTION -----
+    document.getElementById('transactionForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const type = document.getElementById('type').value;
+      const amount = parseFloat(document.getElementById('amount').value);
+      const category = document.getElementById('category').value;
+      const account = document.getElementById('account').value;
+      const date = document.getElementById('date').value;
+      const note = document.getElementById('note').value.trim();
+      const recurring = document.getElementById('recurring').checked;
+
+      transactions.push({ type, amount, category, account, date, note, recurring });
+      saveData(STORAGE_KEY_TX, transactions);
+      // Refresh everything
+      injectRecurring(); // will add recurring entries for current month
+      updateDashboard();
+      renderHistory();
+      renderChart();
+      this.reset();
+      document.getElementById('date').valueAsDate = new Date();
+    });
+
+    // ----- TAB SWITCHING -----
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabName).classList.add('active');
+      document.querySelector(`.nav-tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+      if (tabName === 'settings') renderBudgetSettings();
+      if (tabName === 'view') renderHistory();
+    }
+
+    // ----- INITIAL LOAD -----
+    window.addEventListener('load', () => {
+      document.getElementById('date').valueAsDate = new Date();
+      injectRecurring(); // add recurring transactions for current month if any
+      updateDashboard();
+      renderHistory();
+      renderChart();
+      renderBudgetSettings();
+      // Set month filter to current month
+      document.getElementById('monthFilter').value = getCurrentMonth();
+    });
+  </script>
+</body>
+</html>

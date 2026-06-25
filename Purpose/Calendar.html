@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Modern Calendar</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1a73e8',
+                        primaryLight: '#e8f0fe',
+                        primaryDark: '#1557b0',
+                        surface: '#ffffff',
+                        background: '#f8f9fa',
+                        border: '#dadce0',
+                        text: '#202124',
+                        textSecondary: '#5f6368',
+                        accent: '#1a73e8',
+                        work: '#1a73e8',
+                        personal: '#e3742f',
+                        travel: '#1e8e3e',
+                        other: '#9334e6',
+                    },
+                    fontFamily: {
+                        sans: ['"Google Sans"', 'Roboto', 'Arial', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        card: '0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15)',
+                        cardHover: '0 1px 3px 0 rgba(60,64,67,0.3), 0 8px 16px 3px rgba(60,64,67,0.15)',
+                        popover: '0 4px 16px 0 rgba(0,0,0,0.2), 0 8px 32px 0 rgba(0,0,0,0.1)',
+                    },
+                    borderRadius: {
+                        'xl': '12px',
+                        '2xl': '16px',
+                    },
+                },
+            },
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <style>
+        /* Reset & base */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f8f9fa;
+            color: #202124;
+            font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Focus rings */
+        .focus-ring:focus-visible {
+            outline: 2px solid #1a73e8;
+            outline-offset: 2px;
+        }
+
+        /* Custom checkbox */
+        .chk {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #dadce0;
+            border-radius: 4px;
+            background: white;
+            display: inline-grid;
+            place-items: center;
+            transition: all 0.1s;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .chk:checked {
+            background: #1a73e8;
+            border-color: #1a73e8;
+        }
+        .chk:checked::after {
+            content: "✓";
+            font-size: 14px;
+            color: white;
+            font-weight: 500;
+        }
+        .chk:hover {
+            border-color: #1a73e8;
+        }
+
+        /* Button press */
+        .btn-press:active {
+            transform: scale(0.96);
+        }
+
+        /* Event dot */
+        .event-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.1s;
+            flex-shrink: 0;
+        }
+        .event-dot:hover {
+            transform: scale(1.3);
+        }
+
+        /* Event badge in week view */
+        .event-badge {
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: box-shadow 0.1s, transform 0.1s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+        .event-badge:hover {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Day cell */
+        .day-cell {
+            transition: background 0.1s;
+            border: 1px solid #dadce0;
+            background: white;
+            min-height: 80px;
+            cursor: pointer;
+        }
+        .day-cell:hover {
+            background: #f1f3f4;
+        }
+        .day-cell.selected {
+            background: #e8f0fe;
+        }
+
+        /* Calendar header */
+        .calendar-header {
+            border-bottom: 1px solid #dadce0;
+        }
+
+        /* Pill tags */
+        .pill {
+            border-radius: 16px;
+            padding: 2px 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: none;
+            display: inline-block;
+        }
+
+        /* Scrollbar */
+        .scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .scrollbar::-webkit-scrollbar-thumb {
+            background: #dadce0;
+            border-radius: 4px;
+        }
+        .scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        /* Popover animation */
+        .popover-enter {
+            animation: popIn 0.15s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Toast animation */
+        .toast {
+            animation: slideUp 0.2s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Week view time slot */
+        .time-slot {
+            border-right: 1px solid #dadce0;
+            border-bottom: 1px solid #dadce0;
+            font-size: 0.6rem;
+            color: #5f6368;
+            padding: 4px 6px;
+            text-align: right;
+            background: #f8f9fa;
+            font-weight: 500;
+        }
+
+        /* Agenda items */
+        .agenda-item {
+            border-bottom: 1px solid #e8eaed;
+            padding: 10px 12px;
+            transition: background 0.1s;
+        }
+        .agenda-item:hover {
+            background: #f1f3f4;
+        }
+
+        /* Inputs */
+        .input-modern {
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            transition: border-color 0.1s, box-shadow 0.1s;
+            background: white;
+            width: 100%;
+        }
+        .input-modern:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.2);
+        }
+        .input-modern::placeholder {
+            color: #9aa0a6;
+        }
+
+        /* Select */
+        .select-modern {
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            background: white;
+            width: 100%;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235f6368' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        .select-modern:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.2);
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: background 0.1s, box-shadow 0.1s;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background: #1557b0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .btn-primary:active {
+            transform: scale(0.96);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 6px 16px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #202124;
+            transition: background 0.1s;
+            cursor: pointer;
+        }
+        .btn-outline:hover {
+            background: #f1f3f4;
+        }
+        .btn-outline:active {
+            transform: scale(0.96);
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #5f6368;
+            transition: background 0.1s;
+            font-size: 20px;
+        }
+        .btn-icon:hover {
+            background: #f1f3f4;
+        }
+        .btn-icon:active {
+            transform: scale(0.92);
+        }
+
+        /* Sidebar card */
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            padding: 20px;
+        }
+
+        /* Main card */
+        .main-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
+            overflow: hidden;
+        }
+
+        /* Weekday header */
+        .weekday-header {
+            background: #f8f9fa;
+            font-weight: 500;
+            font-size: 0.75rem;
+            color: #5f6368;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            padding: 8px 0;
+            border-bottom: 1px solid #dadce0;
+        }
+
+        /* Category colors */
+        .bg-work {
+            background: #1a73e8;
+        }
+        .bg-personal {
+            background: #e3742f;
+        }
+        .bg-travel {
+            background: #1e8e3e;
+        }
+        .bg-other {
+            background: #9334e6;
+        }
+        .text-work {
+            color: #1a73e8;
+        }
+        .text-personal {
+            color: #e3742f;
+        }
+        .text-travel {
+            color: #1e8e3e;
+        }
+        .text-other {
+            color: #9334e6;
+        }
+
+        /* Badge count */
+        .badge-count {
+            background: #1a73e8;
+            color: white;
+            border-radius: 12px;
+            padding: 0 6px;
+            font-size: 0.6rem;
+            font-weight: 500;
+            min-width: 18px;
+            height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Today pill */
+        .today-pill {
+            background: #1a73e8;
+            color: white;
+            border-radius: 12px;
+            padding: 0 8px;
+            font-size: 0.55rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            line-height: 18px;
+        }
+
+        /* View menu */
+        .view-menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.1s;
+            font-weight: 500;
+        }
+        .view-menu-item:hover {
+            background: #f1f3f4;
+        }
+        .view-menu-item[aria-selected="true"] {
+            background: #e8f0fe;
+            color: #1a73e8;
+        }
+
+        /* Responsive tweaks */
+        @media (max-width: 640px) {
+            .day-cell {
+                min-height: 56px;
+                padding: 2px !important;
+            }
+            .day-cell .day-number {
+                font-size: 0.7rem;
+            }
+            .event-dot {
+                width: 7px;
+                height: 7px;
+            }
+            .badge-count {
+                font-size: 0.5rem;
+                min-width: 14px;
+                height: 14px;
+            }
+            .today-pill {
+                font-size: 0.45rem;
+                line-height: 14px;
+                padding: 0 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Skip link -->
+    <a href="#calendar-card" class="sr-only focus:not-sr-only focus:ring-2 focus:ring-primary focus:bg-primaryLight focus:text-primary px-4 py-3 absolute left-4 top-4 z-50 rounded-lg">Skip to calendar</a>
+
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <span class="material-icons text-primary text-3xl">calendar_today</span>
+                    <span>Calendar</span>
+                </h1>
+                <p class="text-sm text-gray-500" id="eventCount">0 events</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- Search -->
+                <div class="relative">
+                    <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">search</span>
+                    <input id="searchInput" type="text" placeholder="Search events" class="input-modern pl-9 w-48 md:w-56" aria-label="Search events" />
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-mono">⌘K</span>
+                </div>
+
+                <button id="todayBtn" class="btn-outline">Today</button>
+
+                <div class="flex items-center gap-0.5">
+                    <button id="prevBtn" class="btn-icon" aria-label="Previous month"><span class="material-icons">chevron_left</span></button>
+                    <div id="monthLabel" class="text-base font-medium text-gray-800 min-w-[120px] text-center select-none">Month YYYY</div>
+                    <button id="nextBtn" class="btn-icon" aria-label="Next month"><span class="material-icons">chevron_right</span></button>
+                </div>
+
+                <div class="relative">
+                    <button id="viewBtn" class="btn-outline flex items-center gap-1" aria-haspopup="listbox" aria-expanded="false" aria-controls="viewMenu">
+                        <span id="viewLabel">Month</span>
+                        <span class="material-icons text-sm">expand_more</span>
+                    </button>
+                    <ul id="viewMenu" role="listbox" tabindex="-1" class="hidden absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-popover border border-border z-20 py-1">
+                        <li role="option" data-view="month" aria-selected="true" class="view-menu-item flex items-center gap-2">
+                            <span class="material-icons text-sm">view_module</span> Month
+                        </li>
+                        <li role="option" data-view="week" aria-selected="false" class="view-menu-item flex items-center gap-2">
+                            <span class="material-icons text-sm">view_week</span> Week
+                        </li>
+                        <li role="option" data-view="agenda" aria-selected="false" class="view-menu-item flex items-center gap-2">
+                            <span class="material-icons text-sm">list</span> Agenda
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+            <!-- Calendar Panel -->
+            <section id="calendar-card" class="lg:col-span-3 main-card">
+                <div class="p-4">
+                    <!-- Weekday header -->
+                    <div id="weekdayHeader" class="weekday-header grid grid-cols-7 text-center">
+                        <div>Sun</div>
+                        <div>Mon</div>
+                        <div>Tue</div>
+                        <div>Wed</div>
+                        <div>Thu</div>
+                        <div>Fri</div>
+                        <div>Sat</div>
+                    </div>
+
+                    <!-- Month Grid -->
+                    <div id="calendar" class="grid grid-cols-7 min-h-[380px] sm:min-h-[440px]" role="grid" aria-label="Month grid"></div>
+
+                    <!-- Week View -->
+                    <div id="weekView" class="hidden">
+                        <div class="grid grid-cols-8 text-xs font-medium border-b border-border bg-background">
+                            <div class="p-2 text-center text-gray-500">Time</div>
+                            <div class="p-2 text-center text-gray-500">Sun</div>
+                            <div class="p-2 text-center text-gray-500">Mon</div>
+                            <div class="p-2 text-center text-gray-500">Tue</div>
+                            <div class="p-2 text-center text-gray-500">Wed</div>
+                            <div class="p-2 text-center text-gray-500">Thu</div>
+                            <div class="p-2 text-center text-gray-500">Fri</div>
+                            <div class="p-2 text-center text-gray-500">Sat</div>
+                        </div>
+                        <div id="weekGrid" class="grid grid-cols-8" role="grid" aria-label="Week grid"></div>
+                    </div>
+
+                    <!-- Agenda View -->
+                    <div id="agendaView" class="hidden">
+                        <div id="agendaList" class="divide-y divide-border max-h-[500px] overflow-y-auto scrollbar"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sidebar -->
+            <aside class="space-y-4">
+                <!-- Quick Add -->
+                <div class="sidebar-card">
+                    <h3 class="text-lg font-medium flex items-center gap-2 mb-3">
+                        <span class="material-icons text-primary text-xl">add_circle</span>
+                        Quick Add
+                    </h3>
+                    <form id="quickAddForm" class="space-y-3">
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Title</span>
+                            <input type="text" id="qaTitle" required class="input-modern mt-1" placeholder="Meeting" />
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label>
+                                <span class="text-sm font-medium text-gray-700">Date</span>
+                                <input type="date" id="qaDate" required class="input-modern mt-1" />
+                            </label>
+                            <label>
+                                <span class="text-sm font-medium text-gray-700">Time</span>
+                                <input type="time" id="qaTime" class="input-modern mt-1" />
+                            </label>
+                        </div>
+                        <label>
+                            <span class="text-sm font-medium text-gray-700">Category</span>
+                            <select id="qaCategory" class="select-modern mt-1">
+                                <option value="work">💼 Work</option>
+                                <option value="personal">🧘 Personal</option>
+                                <option value="travel">✈️ Travel</option>
+                                <option value="other">📌 Other</option>
+                            </select>
+                        </label>
+                        <button class="btn-primary w-full">Add Event</button>
+                        <p id="qaMsg" class="text-sm text-gray-500 min-h-[1.5em]"></p>
+                    </form>
+                </div>
+
+                <!-- Filters -->
+                <div class="sidebar-card">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">Show categories</h4>
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="chk" id="fWork" checked />
+                            <span class="pill bg-work text-white">Work</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="chk" id="fPersonal" checked />
+                            <span class="pill bg-personal text-white">Personal</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="chk" id="fTravel" checked />
+                            <span class="pill bg-travel text-white">Travel</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="chk" id="fOther" checked />
+                            <span class="pill bg-other text-white">Other</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Legend & shortcuts -->
+                <div class="sidebar-card">
+                    <h4 class="text-sm font-medium text-gray-700 mb-2">Legend</h4>
+                    <ul class="text-sm space-y-1.5 text-gray-600">
+                        <li class="flex items-center gap-2"><span class="event-dot bg-work"></span> Work</li>
+                        <li class="flex items-center gap-2"><span class="event-dot bg-personal"></span> Personal</li>
+                        <li class="flex items-center gap-2"><span class="event-dot bg-travel"></span> Travel</li>
+                        <li class="flex items-center gap-2"><span class="event-dot bg-other"></span> Other</li>
+                    </ul>
+                    <div class="mt-4 pt-4 border-t border-border">
+                        <h4 class="text-sm font-medium text-gray-700 mb-1">Shortcuts</h4>
+                        <ul class="text-xs text-gray-500 space-y-0.5">
+                            <li><kbd class="border border-border rounded px-1.5 py-0.5 bg-background">j</kbd> <kbd class="border border-border rounded px-1.5 py-0.5 bg-background">k</kbd> nav</li>
+                            <li><kbd class="border border-border rounded px-1.5 py-0.5 bg-background">m</kbd> <kbd class="border border-border rounded px-1.5 py-0.5 bg-background">w</kbd> <kbd class="border border-border rounded px-1.5 py-0.5 bg-background">a</kbd> views</li>
+                            <li><kbd class="border border-border rounded px-1.5 py-0.5 bg-background">/</kbd> <kbd class="border border-border rounded px-1.5 py-0.5 bg-background">⌘K</kbd> search</li>
+                            <li><kbd class="border border-border rounded px-1.5 py-0.5 bg-background">Esc</kbd> close</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Export / Import -->
+                <div class="sidebar-card flex gap-2">
+                    <button id="exportBtn" class="btn-outline flex-1 flex items-center justify-center gap-1">
+                        <span class="material-icons text-sm">download</span> Export
+                    </button>
+                    <button id="importBtn" class="btn-outline flex-1 flex items-center justify-center gap-1">
+                        <span class="material-icons text-sm">upload</span> Import
+                    </button>
+                    <input type="file" id="importFile" accept=".json" class="hidden" />
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Popover -->
+    <div id="popover" class="hidden fixed z-40 bg-white rounded-2xl shadow-popover w-80 max-w-[92vw] p-4 popover-enter" role="dialog" aria-modal="true" aria-labelledby="popoverTitle">
+        <div class="flex items-start justify-between gap-2">
+            <h3 id="popoverTitle" class="text-lg font-medium text-gray-800 break-words">Event</h3>
+            <button id="closePopover" class="btn-icon text-sm" aria-label="Close"><span class="material-icons">close</span></button>
+        </div>
+        <div class="mt-2 space-y-1 text-sm text-gray-600">
+            <p id="popoverDate" class="flex items-center gap-1"><span class="material-icons text-base">event</span> <span></span></p>
+            <p id="popoverTime" class="flex items-center gap-1"><span class="material-icons text-base">access_time</span> <span></span></p>
+            <div class="flex items-center gap-2 mt-2">
+                <span id="popoverTag" class="pill bg-work text-white">Category</span>
+                <span id="popoverId" class="text-xs text-gray-400 font-mono"></span>
+            </div>
+        </div>
+        <div class="mt-4 flex gap-2">
+            <button id="editBtn" class="btn-outline flex items-center gap-1"><span class="material-icons text-sm">edit</span> Edit</button>
+            <button id="deleteBtn" class="btn-outline flex items-center gap-1 text-red-600 border-red-200 hover:bg-red-50"><span class="material-icons text-sm">delete</span> Delete</button>
+            <button id="duplicateBtn" class="btn-outline flex items-center gap-1"><span class="material-icons text-sm">content_copy</span> Duplicate</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-800 text-white px-5 py-3 rounded-xl shadow-popover text-sm hidden toast" role="alert" aria-live="polite"></div>
+
+    <script>
+        // ─── Utilities ──────────────────────────────────────────────────────
+        const pad = n => String(n).padStart(2, "0");
+        const fmtDateISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+        const parseISO = iso => {
+            const [y, m, day] = iso.split("-").map(Number);
+            return new Date(y, m - 1, day);
+        };
+        const humanDate = d => d.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+        const uid = () => crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+        // ─── State ──────────────────────────────────────────────────────────
+        let view = "month";
+        let today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let current = new Date(today.getFullYear(), today.getMonth(), 1);
+        let selectedDate = new Date(today);
+        let searchQuery = "";
+
+        const storeKey = "nb_calendar_events_v2";
+        let events = JSON.parse(localStorage.getItem(storeKey) || "[]");
+        if (!events.length) {
+            const d = today;
+            events = [
+                { id: uid(), date: fmtDateISO(d), time: "09:00", title: "Daily Standup", category: "work" },
+                { id: uid(), date: fmtDateISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)), time: "18:30",
+                    title: "Run 5k", category: "personal" },
+                { id: uid(), date: fmtDateISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 3)), time: "12:00",
+                    title: "Flight to NYC", category: "travel" },
+                { id: uid(), date: fmtDateISO(new Date(d.getFullYear(), d.getMonth(), 1)), time: "10:00",
+                    title: "Kickoff", category: "work" },
+                { id: uid(), date: fmtDateISO(new Date(d.getFullYear(), d.getMonth(), 5)), time: "14:30",
+                    title: "Design Review", category: "work" },
+                { id: uid(), date: fmtDateISO(new Date(d.getFullYear(), d.getMonth(), 12)), time: "",
+                    title: "Holiday 🎉", category: "personal" },
+            ];
+            localStorage.setItem(storeKey, JSON.stringify(events));
+        }
+
+        const filters = { work: true, personal: true, travel: true, other: true };
+
+        // ─── DOM refs ──────────────────────────────────────────────────────
+        const $ = id => document.getElementById(id);
+        const monthLabel = $("monthLabel");
+        const calendar = $("calendar");
+        const weekdayHeader = $("weekdayHeader");
+        const weekView = $("weekView");
+        const weekGrid = $("weekGrid");
+        const agendaView = $("agendaView");
+        const agendaList = $("agendaList");
+        const todayBtn = $("todayBtn");
+        const prevBtn = $("prevBtn");
+        const nextBtn = $("nextBtn");
+        const viewBtn = $("viewBtn");
+        const viewMenu = $("viewMenu");
+        const viewLabel = $("viewLabel");
+        const qaForm = $("quickAddForm");
+        const qaTitle = $("qaTitle");
+        const qaDate = $("qaDate");
+        const qaTime = $("qaTime");
+        const qaCategory = $("qaCategory");
+        const qaMsg = $("qaMsg");
+        const fWork = $("fWork");
+        const fPersonal = $("fPersonal");
+        const fTravel = $("fTravel");
+        const fOther = $("fOther");
+        const popover = $("popover");
+        const popoverTitle = $("popoverTitle");
+        const popoverDate = $("popoverDate");
+        const popoverTime = $("popoverTime");
+        const popoverTag = $("popoverTag");
+        const popoverId = $("popoverId");
+        const closePopover = $("closePopover");
+        const editBtn = $("editBtn");
+        const deleteBtn = $("deleteBtn");
+        const duplicateBtn = $("duplicateBtn");
+        const searchInput = $("searchInput");
+        const toast = $("toast");
+        const eventCount = $("eventCount");
+        const exportBtn = $("exportBtn");
+        const importBtn = $("importBtn");
+        const importFile = $("importFile");
+
+        let popoverEvent = null;
+        let toastTimer = null;
+
+        // ─── Helpers ──────────────────────────────────────────────────────
+        function saveEvents() {
+            localStorage.setItem(storeKey, JSON.stringify(events));
+            updateEventCount();
+        }
+
+        function updateEventCount() {
+            const count = events.filter(e => filters[e.category] !== false).length;
+            eventCount.textContent = `${count} event${count !== 1 ? "s" : ""}`;
+        }
+
+        function showToast(msg, duration = 2000) {
+            if (toastTimer) clearTimeout(toastTimer);
+            toast.textContent = msg;
+            toast.classList.remove("hidden");
+            toastTimer = setTimeout(() => { toast.classList.add("hidden");
+                toastTimer = null; }, duration);
+        }
+
+        function setMonthLabel(date) {
+            monthLabel.textContent = date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+        }
+
+        function startOfWeek(d) {
+            const s = new Date(d);
+            s.setDate(d.getDate() - d.getDay());
+            s.setHours(0, 0, 0, 0);
+            return s;
+        }
+
+        function categoryColor(cat) {
+            const map = { work: "bg-work", personal: "bg-personal", travel: "bg-travel", other: "bg-other" };
+            return map[cat] || "bg-other";
+        }
+
+        function categoryTextColor(cat) {
+            const map = { work: "text-work", personal: "text-personal", travel: "text-travel", other: "text-other" };
+            return map[cat] || "text-other";
+        }
+
+        function categoryLabel(cat) {
+            const map = { work: "Work", personal: "Personal", travel: "Travel", other: "Other" };
+            return map[cat] || cat;
+        }
+
+        function filteredEventsFor(dateISO) {
+            return events.filter(e => e.date === dateISO && filters[e.category] !== false);
+        }
+
+        function searchEvents(list) {
+            if (!searchQuery.trim()) return list;
+            const q = searchQuery.trim().toLowerCase();
+            return list.filter(e => e.title.toLowerCase().includes(q));
+        }
+
+        function getEventsInRange(start, end) {
+            return events.filter(e => {
+                const d = parseISO(e.date);
+                return d >= start && d <= end && filters[e.category] !== false;
+            });
+        }
+
+        // ─── Render ──────────────────────────────────────────────────────
+        function render() {
+            setMonthLabel(current);
+            updateEventCount();
+
+            if (view === "month") {
+                weekdayHeader.classList.remove("hidden");
+                calendar.classList.remove("hidden");
+                weekView.classList.add("hidden");
+                agendaView.classList.add("hidden");
+                renderMonth();
+            } else if (view === "week") {
+                weekdayHeader.classList.add("hidden");
+                calendar.classList.add("hidden");
+                agendaView.classList.add("hidden");
+                weekView.classList.remove("hidden");
+                renderWeek();
+            } else {
+                weekdayHeader.classList.add("hidden");
+                calendar.classList.add("hidden");
+                weekView.classList.add("hidden");
+                agendaView.classList.remove("hidden");
+                renderAgenda();
+            }
+        }
+
+        // ─── Month View ──────────────────────────────────────────────────
+        function renderMonth() {
+            calendar.innerHTML = "";
+            calendar.setAttribute("aria-rowcount", "6");
+            const year = current.getFullYear();
+            const month = current.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const startDay = firstDay.getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const prevMonthDays = new Date(year, month, 0).getDate();
+
+            for (let i = 0; i < 42; i++) {
+                const cell = document.createElement("div");
+                cell.setAttribute("role", "gridcell");
+                let dayNum, dateObj, inCurrent = true;
+
+                if (i < startDay) {
+                    dayNum = prevMonthDays - startDay + i + 1;
+                    dateObj = new Date(year, month - 1, dayNum);
+                    cell.classList.add("bg-gray-50", "text-gray-400");
+                    inCurrent = false;
+                } else if (i >= startDay + daysInMonth) {
+                    dayNum = i - (startDay + daysInMonth) + 1;
+                    dateObj = new Date(year, month + 1, dayNum);
+                    cell.classList.add("bg-gray-50", "text-gray-400");
+                    inCurrent = false;
+                } else {
+                    dayNum = i - startDay + 1;
+                    dateObj = new Date(year, month, dayNum);
+                }
+
+                const isToday = fmtDateISO(dateObj) === fmtDateISO(today);
+                const isSelected = fmtDateISO(dateObj) === fmtDateISO(selectedDate);
+                const dateISO = fmtDateISO(dateObj);
+                const dayEvents = filteredEventsFor(dateISO);
+                const visibleEvents = searchEvents(dayEvents);
+
+                cell.className =
+                    `day-cell p-2 sm:p-3 cursor-pointer focus-ring ${isSelected ? "selected" : ""} ${inCurrent ? "" : "opacity-60"}`;
+                cell.tabIndex = 0;
+
+                // Header
+                const header = document.createElement("div");
+                header.className = "flex items-center justify-between";
+                const dayEl = document.createElement("div");
+                dayEl.className = "day-number text-sm font-medium";
+                dayEl.textContent = dayNum;
+                header.appendChild(dayEl);
+
+                const right = document.createElement("div");
+                right.className = "flex items-center gap-1";
+                if (isToday) {
+                    const t = document.createElement("span");
+                    t.className = "today-pill";
+                    t.textContent = "Today";
+                    right.appendChild(t);
+                }
+                if (dayEvents.length > 0 && !isToday) {
+                    const count = document.createElement("span");
+                    count.className = "badge-count";
+                    count.textContent = dayEvents.length;
+                    right.appendChild(count);
+                }
+                header.appendChild(right);
+                cell.appendChild(header);
+
+                // Events
+                const wrap = document.createElement("div");
+                wrap.className = "mt-1 flex flex-wrap gap-1";
+
+                const show = visibleEvents.slice(0, 3);
+                show.forEach(ev => {
+                    const dot = document.createElement("button");
+                    dot.type = "button";
+                    dot.className = `event-dot ${categoryColor(ev.category)}`;
+                    dot.setAttribute("aria-label", `${ev.title} at ${ev.time || "all day"}`);
+                    dot.dataset.eventId = ev.id;
+                    dot.addEventListener("click", e => { e.stopPropagation();
+                        openPopover(ev, e.clientX, e.clientY); });
+                    // Drag
+                    dot.draggable = true;
+                    dot.addEventListener("dragstart", e => {
+                        e.dataTransfer.setData("text/plain", ev.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        dot.classList.add("opacity-50");
+                    });
+                    dot.addEventListener("dragend", () => dot.classList.remove("opacity-50"));
+                    wrap.appendChild(dot);
+                });
+
+                if (visibleEvents.length > 3) {
+                    const more = document.createElement("button");
+                    more.type = "button";
+                    more.className =
+                        "text-xs text-gray-500 hover:text-gray-700 font-medium hover:underline underline-offset-2";
+                    more.textContent = `+${visibleEvents.length - 3}`;
+                    more.addEventListener("click", e => { e.stopPropagation();
+                        openDayAgenda(dateObj); });
+                    wrap.appendChild(more);
+                }
+
+                cell.appendChild(wrap);
+
+                // Drop
+                cell.addEventListener("dragover", e => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    cell.classList.add("bg-primaryLight");
+                });
+                cell.addEventListener("dragleave", () => cell.classList.remove("bg-primaryLight"));
+                cell.addEventListener("drop", e => {
+                    e.preventDefault();
+                    cell.classList.remove("bg-primaryLight");
+                    const id = e.dataTransfer.getData("text/plain");
+                    const ev = events.find(e => e.id === id);
+                    if (ev) {
+                        ev.date = dateISO;
+                        saveEvents();
+                        render();
+                        showToast(`Moved "${ev.title}" to ${humanDate(dateObj)}`);
+                    }
+                });
+
+                // Click
+                cell.addEventListener("click", () => {
+                    selectedDate = new Date(dateObj);
+                    if (!inCurrent) {
+                        current = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+                    }
+                    render();
+                });
+
+                // Keyboard
+                cell.addEventListener("keydown", ev => {
+                    const key = ev.key;
+                    let delta = 0;
+                    if (key === "ArrowLeft") delta = -1;
+                    if (key === "ArrowRight") delta = 1;
+                    if (key === "ArrowUp") delta = -7;
+                    if (key === "ArrowDown") delta = 7;
+                    if (delta !== 0) {
+                        ev.preventDefault();
+                        const nd = new Date(dateObj);
+                        nd.setDate(dateObj.getDate() + delta);
+                        selectedDate = new Date(nd);
+                        current = new Date(nd.getFullYear(), nd.getMonth(), 1);
+                        render();
+                    }
+                    if (key === "Enter" || key === " ") {
+                        ev.preventDefault();
+                        openDayAgenda(dateObj);
+                    }
+                });
+
+                calendar.appendChild(cell);
+            }
+        }
+
+        // ─── Week View ──────────────────────────────────────────────────
+        function renderWeek() {
+            weekGrid.innerHTML = "";
+            const start = startOfWeek(selectedDate);
+            const hours = Array.from({ length: 24 }, (_, i) => i);
+
+            hours.forEach(h => {
+                const timeCell = document.createElement("div");
+                timeCell.className = "time-slot";
+                timeCell.textContent = `${pad(h)}:00`;
+                weekGrid.appendChild(timeCell);
+
+                for (let d = 0; d < 7; d++) {
+                    const cell = document.createElement("div");
+                    cell.className =
+                        "relative border-b border-r border-border bg-white min-h-[64px] p-1 hover:bg-gray-50 transition-colors";
+                    const date = new Date(start);
+                    date.setDate(start.getDate() + d);
+                    const dateISO = fmtDateISO(date);
+                    cell.dataset.date = dateISO;
+
+                    const dayEvents = filteredEventsFor(dateISO);
+                    const visible = searchEvents(dayEvents);
+
+                    visible.forEach(ev => {
+                        const badge = document.createElement("button");
+                        badge.type = "button";
+                        badge.className =
+                            `event-badge ${categoryColor(ev.category)} text-white text-xs`;
+                        if (!ev.time) {
+                            badge.textContent = `📌 ${ev.title}`;
+                        } else {
+                            badge.textContent = `${ev.time} ${ev.title}`;
+                        }
+                        badge.addEventListener("click", e => openPopover(ev, e.clientX, e.clientY));
+                        badge.draggable = true;
+                        badge.addEventListener("dragstart", e => {
+                            e.dataTransfer.setData("text/plain", ev.id);
+                            e.dataTransfer.effectAllowed = "move";
+                            badge.classList.add("opacity-50");
+                        });
+                        badge.addEventListener("dragend", () => badge.classList.remove("opacity-50"));
+                        cell.appendChild(badge);
+                    });
+
+                    // Drop
+                    cell.addEventListener("dragover", e => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        cell.classList.add("bg-primaryLight");
+                    });
+                    cell.addEventListener("dragleave", () => cell.classList.remove("bg-primaryLight"));
+                    cell.addEventListener("drop", e => {
+                        e.preventDefault();
+                        cell.classList.remove("bg-primaryLight");
+                        const id = e.dataTransfer.getData("text/plain");
+                        const ev = events.find(e => e.id === id);
+                        if (ev) {
+                            ev.date = dateISO;
+                            saveEvents();
+                            render();
+                            showToast(`Moved "${ev.title}" to ${humanDate(date)}`);
+                        }
+                    });
+
+                    weekGrid.appendChild(cell);
+                }
+            });
+        }
+
+        // ─── Agenda View ────────────────────────────────────────────────
+        function renderAgenda() {
+            agendaList.innerHTML = "";
+            const start = new Date(current.getFullYear(), current.getMonth(), 1);
+            const end = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+            let list = events.filter(e => {
+                const d = parseISO(e.date);
+                return d >= start && d <= end && filters[e.category] !== false;
+            });
+            list = searchEvents(list);
+            list.sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || ""));
+
+            if (list.length === 0) {
+                const li = document.createElement("div");
+                li.className = "p-6 text-center text-gray-500 text-sm";
+                li.textContent = searchQuery.trim() ? "No matching events." : "No events this month. ✨";
+                agendaList.appendChild(li);
+                return;
+            }
+
+            let lastDate = "";
+            list.forEach(e => {
+                if (e.date !== lastDate) {
+                    const header = document.createElement("div");
+                    header.className = "sticky top-0 bg-background px-4 py-2 font-medium text-sm text-gray-700 border-b border-border";
+                    const d = parseISO(e.date);
+                    header.textContent = d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric",
+                        year: "numeric" });
+                    agendaList.appendChild(header);
+                    lastDate = e.date;
+                }
+                const item = document.createElement("div");
+                item.className = "agenda-item flex items-center gap-3";
+                const dot = document.createElement("span");
+                dot.className = `event-dot ${categoryColor(e.category)}`;
+                item.appendChild(dot);
+                const text = document.createElement("div");
+                text.className = "flex-1 min-w-0";
+                const time = e.time || "All day";
+                text.innerHTML =
+                    `<div class="font-medium text-gray-800 truncate">${e.title}</div><div class="text-xs text-gray-500">${time}</div>`;
+                item.appendChild(text);
+                const openBtn = document.createElement("button");
+                openBtn.className =
+                    "btn-outline text-xs px-3 py-1 flex items-center gap-1";
+                openBtn.innerHTML = '<span class="material-icons text-sm">open_in_new</span> Open';
+                openBtn.addEventListener("click", ev => openPopover(e, ev.clientX, ev.clientY));
+                item.appendChild(openBtn);
+                agendaList.appendChild(item);
+            });
+        }
+
+        // ─── Popover ────────────────────────────────────────────────────
+        function openPopover(ev, x, y) {
+            popoverEvent = ev;
+            popoverTitle.textContent = ev.title;
+            const d = parseISO(ev.date);
+            popoverDate.querySelector('span:last-child').textContent = d.toLocaleDateString(undefined, { weekday: 'long',
+                month: 'long', day: 'numeric', year: 'numeric' });
+            popoverTime.querySelector('span:last-child').textContent = ev.time ? ev.time : "All day";
+            popoverTag.textContent = categoryLabel(ev.category);
+            popoverTag.className = `pill ${categoryColor(ev.category)} text-white`;
+            popoverId.textContent = `#${ev.id.slice(0, 8)}`;
+
+            const w = Math.min(320, window.innerWidth - 32);
+            popover.style.width = w + "px";
+            let left = Math.min(window.innerWidth - w - 16, Math.max(16, x + 14));
+            let top = Math.min(window.innerHeight - 220, Math.max(16, y + 14));
+            popover.style.left = left + "px";
+            popover.style.top = top + "px";
+            popover.classList.remove("hidden");
+            popover.classList.add("popover-enter");
+            setTimeout(() => popover.classList.remove("popover-enter"), 200);
+            closePopover.focus({ preventScroll: true });
+        }
+
+        function closePopoverFn() {
+            popover.classList.add("hidden");
+            popoverEvent = null;
+        }
+
+        function openDayAgenda(dateObj) {
+            selectedDate = new Date(dateObj);
+            view = "agenda";
+            viewLabel.textContent = "Agenda";
+            render();
+            setTimeout(() => {
+                const headers = [...agendaList.children].filter(el => el.classList.contains("sticky"));
+                const target = headers.find(h => {
+                    const txt = h.textContent || "";
+                    return txt.includes(dateObj.toLocaleDateString(undefined, { day: 'numeric' }));
+                });
+                if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 100);
+        }
+
+        // ─── Event handlers ─────────────────────────────────────────────
+        todayBtn.addEventListener("click", () => {
+            current = new Date(today.getFullYear(), today.getMonth(), 1);
+            selectedDate = new Date(today);
+            render();
+        });
+
+        prevBtn.addEventListener("click", () => {
+            if (view === "week") {
+                selectedDate.setDate(selectedDate.getDate() - 7);
+                current = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+            } else {
+                current = new Date(current.getFullYear(), current.getMonth() - 1, 1);
+            }
+            render();
+        });
+
+        nextBtn.addEventListener("click", () => {
+            if (view === "week") {
+                selectedDate.setDate(selectedDate.getDate() + 7);
+                current = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+            } else {
+                current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+            }
+            render();
+        });
+
+        viewBtn.addEventListener("click", () => {
+            const open = viewMenu.classList.contains("hidden");
+            viewBtn.setAttribute("aria-expanded", String(open));
+            viewMenu.classList.toggle("hidden");
+            if (!open) return;
+            viewMenu.focus();
+        });
+
+        viewMenu.addEventListener("click", e => {
+            const li = e.target.closest("[role=option]");
+            if (!li) return;
+            const v = li.dataset.view;
+            [...viewMenu.children].forEach(c => c.setAttribute("aria-selected", String(c === li)));
+            view = v;
+            viewLabel.textContent = li.textContent.trim();
+            viewMenu.classList.add("hidden");
+            render();
+        });
+
+        document.addEventListener("click", e => {
+            if (!viewMenu.contains(e.target) && e.target !== viewBtn) {
+                viewMenu.classList.add("hidden");
+                viewBtn.setAttribute("aria-expanded", "false");
+            }
+            if (!popover.contains(e.target) &&
+                !e.target.closest(".event-dot") &&
+                !e.target.closest(".event-badge") &&
+                !e.target.closest("#agendaList")) {
+                closePopoverFn();
+            }
+        });
+
+        closePopover.addEventListener("click", closePopoverFn);
+
+        // ─── Quick Add ──────────────────────────────────────────────────
+        qaForm.addEventListener("submit", e => {
+            e.preventDefault();
+            const title = qaTitle.value.trim();
+            const date = qaDate.value;
+            const time = qaTime.value;
+            const category = qaCategory.value;
+
+            if (!title || !date) {
+                qaMsg.textContent = "⚠️ Title and date required.";
+                qaMsg.className = "text-sm text-red-600";
+                return;
+            }
+
+            const newEvent = { id: uid(), title, date, time, category };
+            events.push(newEvent);
+            saveEvents();
+            qaMsg.textContent = "✅ Event added!";
+            qaMsg.className = "text-sm text-green-700";
+            qaForm.reset();
+            qaDate.value = fmtDateISO(today);
+            const d = parseISO(date);
+            current = new Date(d.getFullYear(), d.getMonth(), 1);
+            selectedDate = d;
+            render();
+            showToast(`Added "${title}"`);
+            setTimeout(() => { qaMsg.textContent = ""; }, 1500);
+        });
+
+        // ─── Filters ────────────────────────────────────────────────────
+        fWork.addEventListener("change", e => { filters.work = e.target.checked;
+            render(); });
+        fPersonal.addEventListener("change", e => { filters.personal = e.target.checked;
+            render(); });
+        fTravel.addEventListener("change", e => { filters.travel = e.target.checked;
+            render(); });
+        fOther.addEventListener("change", e => { filters.other = e.target.checked;
+            render(); });
+
+        // ─── Search ─────────────────────────────────────────────────────
+        searchInput.addEventListener("input", e => {
+            searchQuery = e.target.value;
+            render();
+        });
+
+        document.addEventListener("keydown", e => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+            if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.target.closest("input,textarea,select")) {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+        });
+
+        // ─── Keyboard shortcuts ────────────────────────────────────────
+        document.addEventListener("keydown", e => {
+            if (e.target.closest("input,textarea,select") || popoverEvent) return;
+            const key = e.key.toLowerCase();
+            if (key === "j") { e.preventDefault();
+                prevBtn.click(); }
+            if (key === "k") { e.preventDefault();
+                nextBtn.click(); }
+            if (key === "m") { e.preventDefault();
+                view = "month";
+                viewLabel.textContent = "Month";
+                render(); }
+            if (key === "w") { e.preventDefault();
+                view = "week";
+                viewLabel.textContent = "Week";
+                render(); }
+            if (key === "a") { e.preventDefault();
+                view = "agenda";
+                viewLabel.textContent = "Agenda";
+                render(); }
+            if (key === "escape") { closePopoverFn(); }
+        });
+
+        // ─── Popover actions ───────────────────────────────────────────
+        deleteBtn.addEventListener("click", () => {
+            if (!popoverEvent) return;
+            const title = popoverEvent.title;
+            events = events.filter(e => e.id !== popoverEvent.id);
+            saveEvents();
+            closePopoverFn();
+            render();
+            showToast(`Deleted "${title}"`);
+        });
+
+        editBtn.addEventListener("click", () => {
+            if (!popoverEvent) return;
+            const ev = popoverEvent;
+            const title = prompt("Edit title", ev.title);
+            if (title === null) return;
+            const time = prompt("Edit time (HH:MM) or leave empty for all-day", ev.time || "");
+            if (time === null) return;
+            const cat = prompt("Category (work/personal/travel/other)", ev.category);
+            if (cat === null) return;
+            const validTime = !time || /^\d{2}:\d{2}$/.test(time);
+            if (!validTime) { showToast("Invalid time format. Use HH:MM.", 2000); return; }
+            const validCat = ["work", "personal", "travel", "other"].includes(cat.toLowerCase());
+            ev.title = title.trim() || ev.title;
+            ev.time = time || "";
+            ev.category = validCat ? cat.toLowerCase() : ev.category;
+            events = events.map(e => e.id === ev.id ? ev : e);
+            saveEvents();
+            closePopoverFn();
+            render();
+            showToast(`Updated "${ev.title}"`);
+        });
+
+        duplicateBtn.addEventListener("click", () => {
+            if (!popoverEvent) return;
+            const ev = popoverEvent;
+            const dup = { ...ev, id: uid(), title: `${ev.title} (copy)` };
+            events.push(dup);
+            saveEvents();
+            closePopoverFn();
+            render();
+            showToast(`Duplicated "${ev.title}"`);
+        });
+
+        // ─── Export / Import ──────────────────────────────────────────
+        exportBtn.addEventListener("click", () => {
+            const data = JSON.stringify(events, null, 2);
+            const blob = new Blob([data], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `calendar_export_${fmtDateISO(new Date())}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Exported events!");
+        });
+
+        importBtn.addEventListener("click", () => importFile.click());
+
+        importFile.addEventListener("change", e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (!Array.isArray(data)) throw new Error("Invalid format");
+                    const merged = [...events, ...data];
+                    events = merged;
+                    saveEvents();
+                    render();
+                    showToast(`Imported ${data.length} events!`);
+                } catch (err) {
+                    showToast("Invalid JSON file.", 2000);
+                }
+            };
+            reader.readAsText(file);
+            importFile.value = "";
+        });
+
+        // ─── Init ──────────────────────────────────────────────────────
+        qaDate.value = fmtDateISO(today);
+        updateEventCount();
+        render();
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) saveEvents();
+        });
+
+        console.log("📅 Modern Calendar loaded. Shortcuts: j/k (nav), m/w/a (views), / (search), Esc (close)");
+    </script>
+</body>
+</html>

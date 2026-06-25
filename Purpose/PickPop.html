@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+    <title>PickPop · decision roulette</title>
+    <!-- Google Fonts & Font Awesome 6 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        /* ─── reset & base ─── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(140deg, #f9e7d2 0%, #f5cfb7 100%);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .decision-card {
+            max-width: 720px;
+            width: 100%;
+            background: rgba(255, 255, 245, 0.98);
+            backdrop-filter: blur(2px);
+            border-radius: 3rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.3), 0 2px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 250, 240, 0.7);
+        }
+
+        /* ─── header ─── */
+        .header {
+            background: #ffffffcc;
+            padding: 1.6rem 2rem 0.8rem 2rem;
+            border-bottom: 2px dashed #ffd7b5;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #C45C2C, #E27C3E);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .header h1 i {
+            color: #E27C3E;
+            background: none;
+            font-size: 2rem;
+        }
+
+        .sub {
+            font-size: 0.85rem;
+            color: #b47c54;
+            margin-top: 6px;
+            font-weight: 450;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ─── result spotlight ─── */
+        .result-area {
+            background: linear-gradient(115deg, #fff7ed, #fff2e4);
+            margin: 1.5rem 2rem 0.5rem 2rem;
+            border-radius: 2.2rem;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: inset 0 1px 4px #ffe1bf, 0 8px 18px rgba(0, 0, 0, 0.05);
+            border: 1px solid #ffe2c4;
+        }
+
+        .decision-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+            color: #bc8a5a;
+        }
+
+        .decision-result {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #a54e1f;
+            margin: 0.5rem 0 0.25rem;
+            word-break: break-word;
+            line-height: 1.3;
+            background: #fff3e6;
+            padding: 0.6rem 1rem;
+            border-radius: 2rem;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .decision-hint {
+            font-size: 0.75rem;
+            color: #b98f6e;
+            margin-top: 10px;
+        }
+
+        /* ─── spin button ─── */
+        .spin-wrapper {
+            padding: 0rem 2rem 1rem 2rem;
+            text-align: center;
+        }
+
+        .spin-btn {
+            background: #e47a3b;
+            border: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            padding: 14px 28px;
+            border-radius: 60px;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 10px 18px -8px rgba(175, 85, 30, 0.4);
+            font-family: 'Inter', monospace;
+        }
+
+        .spin-btn i {
+            font-size: 1.3rem;
+        }
+
+        .spin-btn:hover {
+            background: #c95f26;
+            transform: scale(0.97);
+            box-shadow: 0 6px 12px -6px rgba(150, 70, 20, 0.4);
+        }
+
+        .spin-btn:active {
+            transform: scale(0.93);
+        }
+
+        /* ─── options panel ─── */
+        .options-panel {
+            margin: 0.8rem 1.8rem 1rem 1.8rem;
+            background: #fffaf3;
+            border-radius: 2rem;
+            padding: 1.2rem 1.4rem;
+            border: 1px solid #ffebdb;
+        }
+
+        .panel-title {
+            font-weight: 700;
+            color: #b4673a;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .badge-count {
+            background: #ffe2cf;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .option-input-area {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .option-input-area input {
+            flex: 2;
+            background: white;
+            border: 1.5px solid #ffe0ca;
+            padding: 12px 16px;
+            border-radius: 60px;
+            font-size: 0.9rem;
+            outline: none;
+            font-family: 'Inter', monospace;
+            transition: 0.2s;
+            min-width: 150px;
+        }
+
+        .option-input-area input:focus {
+            border-color: #e27c3e;
+            box-shadow: 0 0 0 3px rgba(226, 124, 62, 0.2);
+        }
+
+        .option-input-area button {
+            background: #eecbad;
+            border: none;
+            padding: 0 20px;
+            border-radius: 60px;
+            font-weight: 600;
+            color: #854c28;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .option-input-area button:hover {
+            background: #e2b48c;
+            color: #60371b;
+        }
+
+        /* ─── options list ─── */
+        .options-list {
+            max-height: 240px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .options-list::-webkit-scrollbar {
+            width: 4px;
+        }
+        .options-list::-webkit-scrollbar-track {
+            background: #faeada;
+            border-radius: 8px;
+        }
+        .options-list::-webkit-scrollbar-thumb {
+            background: #e4bc98;
+            border-radius: 8px;
+        }
+
+        .option-chip {
+            background: white;
+            border-radius: 60px;
+            padding: 8px 12px 8px 18px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #ffe0cb;
+            transition: 0.1s;
+        }
+
+        .option-chip:hover {
+            border-color: #e4b894;
+        }
+
+        .option-text {
+            font-weight: 500;
+            color: #3b2a1e;
+            word-break: break-word;
+            flex: 1;
+            margin-right: 8px;
+        }
+
+        .option-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .edit-option,
+        .delete-option {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 30px;
+            transition: 0.2s;
+            color: #bc8f6b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-option:hover {
+            background: #f1e0d2;
+            color: #c25f2a;
+        }
+
+        .delete-option:hover {
+            background: #ffe3db;
+            color: #d9534f;
+        }
+
+        .reset-defaults {
+            margin-top: 14px;
+            text-align: right;
+        }
+
+        .reset-btn {
+            background: transparent;
+            border: 1px solid #e9cfb8;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            color: #b68056;
+            transition: 0.2s;
+        }
+
+        .reset-btn:hover {
+            background: #f8ede2;
+            border-color: #d6aa82;
+            color: #a25728;
+        }
+
+        .empty-options {
+            text-align: center;
+            padding: 2rem 0.5rem;
+            color: #c99e7a;
+            font-weight: 500;
+        }
+
+        /* ─── animations ─── */
+        @keyframes gentlePop {
+            0% {
+                transform: scale(0.96);
+                opacity: 0.7;
+            }
+            80% {
+                transform: scale(1.02);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .pop-animation {
+            animation: gentlePop 0.35s cubic-bezier(0.2, 1.2, 0.3, 1);
+        }
+
+        @keyframes shakeX {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-6px);
+            }
+            75% {
+                transform: translateX(6px);
+            }
+        }
+
+        .shake {
+            animation: shakeX 0.25s ease;
+        }
+
+        /* ─── responsive ─── */
+        @media (max-width: 520px) {
+            .decision-result {
+                font-size: 1.7rem;
+            }
+            .option-input-area {
+                flex-direction: column;
+            }
+            .option-input-area button {
+                justify-content: center;
+                padding: 10px;
+            }
+            .decision-card {
+                border-radius: 2rem;
+            }
+            .header h1 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="decision-card">
+        <!-- header -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-chart-simple"></i> PickPop
+            </h1>
+            <div class="sub">✨ spin the wheel of decisions • let fate choose ✨</div>
+        </div>
+
+        <!-- result -->
+        <div class="result-area" id="resultArea">
+            <div class="decision-label"><i class="fas fa-magic"></i> today's pick</div>
+            <div class="decision-result" id="decisionResult">—</div>
+            <div class="decision-hint" id="decisionHint">click the big button &nbsp;🎲</div>
+        </div>
+
+        <!-- spin -->
+        <div class="spin-wrapper">
+            <button class="spin-btn" id="spinButton">
+                <i class="fas fa-dice-d6"></i> PICK FOR ME
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- options manager -->
+        <div class="options-panel">
+            <div class="panel-title">
+                <span><i class="fas fa-list-ul"></i> your choices</span>
+                <span class="badge-count" id="optionsCountBadge">0 items</span>
+            </div>
+
+            <div class="option-input-area">
+                <input type="text" id="newOptionInput" placeholder="e.g., Pizza, Walk, Movie, Sleep…" maxlength="50" autocomplete="off" />
+                <button id="addOptionBtn"><i class="fas fa-plus-circle"></i> Add</button>
+            </div>
+
+            <div class="options-list" id="optionsListContainer">
+                <div class="empty-options">
+                    <i class="far fa-surprise"></i> No options yet — add some!
+                </div>
+            </div>
+
+            <div class="reset-defaults">
+                <button class="reset-btn" id="resetDefaultsBtn"><i class="fas fa-undo-alt"></i> reset to fun defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  STATE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let optionsArray = [];
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  DOM refs
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const spinBtn = document.getElementById('spinButton');
+        const decisionResultSpan = document.getElementById('decisionResult');
+        const decisionHintSpan = document.getElementById('decisionHint');
+        const optionsListDiv = document.getElementById('optionsListContainer');
+        const optionsCountBadge = document.getElementById('optionsCountBadge');
+        const newOptionInput = document.getElementById('newOptionInput');
+        const addOptionBtn = document.getElementById('addOptionBtn');
+        const resetDefaultsBtn = document.getElementById('resetDefaultsBtn');
+        const resultAreaDiv = document.getElementById('resultArea');
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  HELPERS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function truncateString(str, maxLen) {
+            if (str.length <= maxLen) return str;
+            return str.slice(0, maxLen - 2) + '..';
+        }
+
+        function saveOptionsToLocal() {
+            try {
+                localStorage.setItem('pickpop_options', JSON.stringify(optionsArray));
+            } catch (_) { /* ignore */ }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  DEFAULT OPTIONS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const DEFAULT_OPTIONS = [
+            '☕ Coffee & chill',
+            '🍕 Pizza night',
+            '📚 Read a book',
+            '🎬 Movie marathon',
+            '🧘‍♀️ Stretch / Yoga',
+            '🚶‍♂️ Take a walk',
+            '🎧 Listen to a podcast',
+            '💻 Code something creative'
+        ];
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  LOAD / RENDER
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function loadOptions() {
+            const stored = localStorage.getItem('pickpop_options');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length) {
+                        optionsArray = parsed.slice(0, 50); // cap at 50
+                        return;
+                    }
+                } catch (_) { /* ignore */ }
+            }
+            // no stored data → use defaults
+            optionsArray = DEFAULT_OPTIONS.slice();
+            saveOptionsToLocal();
+        }
+
+        function renderOptionsList() {
+            if (!optionsListDiv) return;
+
+            if (!optionsArray.length) {
+                optionsListDiv.innerHTML = `
+                    <div class="empty-options">
+                        <i class="far fa-frown-open"></i> No choices yet. Add an option above!
+                    </div>
+                `;
+                optionsCountBadge.innerText = '0 items';
+                return;
+            }
+
+            let html = '';
+            optionsArray.forEach((opt, idx) => {
+                const escaped = escapeHtml(opt);
+                html += `
+                    <div class="option-chip" data-opt-index="${idx}">
+                        <span class="option-text">${escaped}</span>
+                        <div class="option-actions">
+                            <button class="edit-option" data-index="${idx}" aria-label="edit">
+                                <i class="fas fa-pen"></i>
+                            </button>
+                            <button class="delete-option" data-index="${idx}" aria-label="delete">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            optionsListDiv.innerHTML = html;
+            const count = optionsArray.length;
+            optionsCountBadge.innerText = `${count} item${count !== 1 ? 's' : ''}`;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  CRUD
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function addNewOption() {
+            const raw = newOptionInput.value.trim();
+            if (!raw) {
+                newOptionInput.style.borderColor = '#e9a17a';
+                newOptionInput.classList.add('shake');
+                setTimeout(() => {
+                    newOptionInput.style.borderColor = '#ffe0ca';
+                    newOptionInput.classList.remove('shake');
+                }, 400);
+                decisionHintSpan.innerText = '✏️ Type something first!';
+                setTimeout(() => {
+                    if (optionsArray.length) decisionHintSpan.innerText = 'click the big button 🎲';
+                    else decisionHintSpan.innerText = 'Add at least one option!';
+                }, 1500);
+                return;
+            }
+
+            if (optionsArray.length >= 50) {
+                decisionHintSpan.innerText = '⚠️ Maximum 50 options – remove some first.';
+                setTimeout(() => {
+                    if (optionsArray.length) decisionHintSpan.innerText = 'click the big button 🎲';
+                    else decisionHintSpan.innerText = 'Add at least one option!';
+                }, 1800);
+                return;
+            }
+
+            optionsArray.push(raw);
+            saveOptionsToLocal();
+            newOptionInput.value = '';
+            renderOptionsList();
+
+            decisionHintSpan.innerText = `✨ "${truncateString(raw, 28)}" added! spin the wheel ✨`;
+            setTimeout(() => {
+                if (optionsArray.length) decisionHintSpan.innerText = 'click the big button 🎲';
+                else decisionHintSpan.innerText = 'Add some options to start!';
+            }, 1800);
+        }
+
+        function deleteOptionByIndex(index) {
+            if (index < 0 || index >= optionsArray.length) return;
+            optionsArray.splice(index, 1);
+            saveOptionsToLocal();
+            renderOptionsList();
+
+            if (optionsArray.length === 0) {
+                decisionResultSpan.innerText = '—';
+                decisionHintSpan.innerText = 'Add some choices to spin ✨';
+            } else {
+                decisionHintSpan.innerText = '🗑️ Option removed. Ready to spin!';
+                setTimeout(() => {
+                    if (optionsArray.length) decisionHintSpan.innerText = 'click the big button 🎲';
+                }, 1300);
+            }
+        }
+
+        function editOptionByIndex(index) {
+            if (index < 0 || index >= optionsArray.length) return;
+            const current = optionsArray[index];
+            const newVal = prompt('✏️ Edit your choice:', current);
+            if (newVal === null) return; // cancelled
+            const trimmed = newVal.trim();
+            if (!trimmed) {
+                decisionHintSpan.innerText = '⛔ Name cannot be empty. No changes made.';
+                return;
+            }
+            optionsArray[index] = trimmed;
+            saveOptionsToLocal();
+            renderOptionsList();
+            decisionHintSpan.innerText = `✅ updated to “${truncateString(trimmed, 30)}”`;
+            setTimeout(() => {
+                if (optionsArray.length) decisionHintSpan.innerText = 'click the big button 🎲';
+            }, 1500);
+        }
+
+        function resetToDefaults() {
+            optionsArray = DEFAULT_OPTIONS.slice();
+            saveOptionsToLocal();
+            renderOptionsList();
+            decisionResultSpan.innerText = '—';
+            decisionHintSpan.innerText = '🔄 Default collection loaded! Give it a spin 🌀';
+            setTimeout(() => {
+                if (optionsArray.length) decisionHintSpan.innerText = 'click the big button 🎲';
+                else decisionHintSpan.innerText = 'Add options to spin!';
+            }, 2000);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  PICK RANDOM
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function pickRandomDecision() {
+            if (!optionsArray.length) {
+                decisionResultSpan.innerText = '⚠️ No choices';
+                decisionHintSpan.innerText = '➕ Add options first!';
+                resultAreaDiv.classList.remove('shake');
+                void resultAreaDiv.offsetWidth;
+                resultAreaDiv.classList.add('shake');
+                setTimeout(() => resultAreaDiv.classList.remove('shake'), 300);
+                return;
+            }
+
+            // pop animation
+            resultAreaDiv.classList.remove('pop-animation');
+            void resultAreaDiv.offsetWidth;
+            resultAreaDiv.classList.add('pop-animation');
+
+            const randomIndex = Math.floor(Math.random() * optionsArray.length);
+            const chosen = optionsArray[randomIndex];
+
+            decisionResultSpan.innerText = chosen;
+            decisionHintSpan.innerHTML = `<i class="fas fa-crown"></i> fate chose: ${truncateString(chosen, 42)}  🎉`;
+
+            // micro bounce on button
+            spinBtn.style.transform = 'scale(0.94)';
+            setTimeout(() => { spinBtn.style.transform = ''; }, 160);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  EVENT DELEGATION (edit / delete)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function handleOptionsPanelClick(e) {
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            // delete
+            if (target.classList.contains('delete-option')) {
+                const idx = parseInt(target.dataset.index, 10);
+                if (!isNaN(idx)) deleteOptionByIndex(idx);
+                return;
+            }
+
+            // edit
+            if (target.classList.contains('edit-option')) {
+                const idx = parseInt(target.dataset.index, 10);
+                if (!isNaN(idx)) editOptionByIndex(idx);
+                return;
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  KEYBOARD: Enter to add, Space to spin
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function onNewOptionKeyPress(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addNewOption();
+            }
+        }
+
+        function onGlobalKeydown(e) {
+            // ignore if typing in input
+            if (document.activeElement === newOptionInput) return;
+            if (e.key === ' ' || e.key === 'Space' || e.key === 'Enter') {
+                if (e.key === ' ' || e.key === 'Space') e.preventDefault();
+                pickRandomDecision();
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        //  INIT
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function init() {
+            loadOptions();
+            renderOptionsList();
+
+            // set initial hint
+            if (optionsArray.length) {
+                decisionHintSpan.innerText = 'click the big button 🎲';
+            } else {
+                decisionResultSpan.innerText = '✨ add choices ✨';
+                decisionHintSpan.innerText = 'Type something & press Add';
+            }
+
+            // wire events
+            spinBtn.addEventListener('click', pickRandomDecision);
+            addOptionBtn.addEventListener('click', addNewOption);
+            newOptionInput.addEventListener('keypress', onNewOptionKeyPress);
+            resetDefaultsBtn.addEventListener('click', resetToDefaults);
+            optionsListDiv.addEventListener('click', handleOptionsPanelClick);
+            window.addEventListener('keydown', onGlobalKeydown);
+        }
+
+        // go
+        init();
+    </script>
+
+</body>
+</html>

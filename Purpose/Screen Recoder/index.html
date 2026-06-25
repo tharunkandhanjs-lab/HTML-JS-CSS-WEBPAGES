@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Brutal Screen Recorder — No Install</title>
+    <style>
+        /* ─── Reset & Base ─── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0d0d0f;
+            --surface: #18181c;
+            --surface-2: #22222a;
+            --border: #3a3a44;
+            --text: #ececec;
+            --text-muted: #9a9aa8;
+            --accent: #ff5e5e;
+            --accent-dim: #cc3a3a;
+            --accent-glow: rgba(255, 94, 94, 0.25);
+            --radius: 16px;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --transition: 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        html {
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(255, 94, 94, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(255, 94, 94, 0.03) 0%, transparent 50%);
+        }
+
+        /* ─── Scrollbar ─── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* ─── Container ─── */
+        .wrap {
+            max-width: 820px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        /* ─── Cards ─── */
+        .neo {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(2px);
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .neo:hover {
+            border-color: #4a4a56;
+        }
+
+        /* ─── Header ─── */
+        .hero {
+            padding: 32px 36px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: -60%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: rgba(255, 94, 94, 0.10);
+            padding: 4px 14px;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 94, 94, 0.15);
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, #fff 60%, var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .title .highlight {
+            background: linear-gradient(135deg, var(--accent), #ff8a8a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .note {
+            margin-top: 14px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            position: relative;
+            z-index: 1;
+        }
+
+        .note strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* ─── Panel ─── */
+        .panel {
+            padding: 28px 32px 32px;
+        }
+
+        .panel+.panel {
+            margin-top: 0;
+        }
+
+        /* ─── Controls ─── */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px 18px;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: var(--font);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+            position: relative;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            pointer-events: none;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 0 0 var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-dim);
+            box-shadow: 0 0 24px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary.is-recording {
+            background: #ffb347;
+            color: #1a1a1a;
+            box-shadow: 0 0 30px rgba(255, 179, 71, 0.3);
+            animation: pulse-record 1.8s ease-in-out infinite;
+        }
+
+        .btn-primary.is-recording:hover:not(:disabled) {
+            background: #f5a623;
+            box-shadow: 0 0 40px rgba(255, 179, 71, 0.4);
+        }
+
+        @keyframes pulse-record {
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(255, 179, 71, 0.25);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(255, 179, 71, 0.5);
+            }
+        }
+
+        .btn-secondary {
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #2c2c36;
+            border-color: #5a5a6a;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary:active:not(:disabled) {
+            transform: scale(0.96) translateY(0);
+        }
+
+        .btn-icon {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .status {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 6px 14px;
+            background: var(--surface-2);
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            white-space: nowrap;
+            transition: all var(--transition);
+        }
+
+        .status .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: background var(--transition);
+            flex-shrink: 0;
+        }
+
+        .status .dot.idle {
+            background: #5a5a6a;
+        }
+        .status .dot.recording {
+            background: #ffb347;
+            animation: blink-dot 0.8s ease-in-out infinite;
+        }
+        .status .dot.stopped {
+            background: var(--accent);
+        }
+        .status .dot.ready {
+            background: #4ade80;
+        }
+
+        @keyframes blink-dot {
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+        }
+
+        /* ─── Preview ─── */
+        .preview {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg);
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            transition: border-color var(--transition);
+            min-height: 240px;
+        }
+
+        .preview.has-video {
+            border-color: #4a4a5a;
+        }
+
+        .video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: contain;
+            background: #0a0a0c;
+            border-radius: 12px;
+        }
+
+        .hint {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 24px;
+            background: var(--bg);
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            border-radius: 12px;
+        }
+
+        .hint.hidden {
+            opacity: 0;
+            transform: scale(0.96);
+            pointer-events: none;
+        }
+
+        .hint .icon-big {
+            font-size: 3.2rem;
+            opacity: 0.3;
+            margin-bottom: 4px;
+        }
+
+        /* ─── Subhead & Text ─── */
+        .subhead {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-top: 22px;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+            color: #fff;
+        }
+
+        .subhead:first-of-type {
+            margin-top: 0;
+        }
+
+        .text {
+            color: var(--text-muted);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        .text strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .steps {
+            color: var(--text-muted);
+            line-height: 1.8;
+            font-size: 0.95rem;
+            padding-left: 22px;
+            margin-top: 4px;
+        }
+
+        .steps li {
+            margin-bottom: 4px;
+        }
+
+        .steps li strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .steps li::marker {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* ─── Footer ─── */
+        .footer {
+            padding: 10px 4px 4px;
+            text-align: center;
+        }
+
+        .small {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            opacity: 0.6;
+            line-height: 1.5;
+        }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 640px) {
+            body {
+                padding: 16px;
+            }
+            .hero {
+                padding: 24px 20px 20px;
+            }
+            .title {
+                font-size: 1.6rem;
+            }
+            .panel {
+                padding: 20px 18px 24px;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+            }
+            .btn {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+                justify-content: center;
+            }
+            .status {
+                margin-left: 0;
+                justify-content: center;
+                padding: 8px 16px;
+            }
+            .preview {
+                aspect-ratio: 16 / 10;
+                min-height: 180px;
+            }
+            .hint .icon-big {
+                font-size: 2.4rem;
+            }
+            .badge {
+                font-size: 0.6rem;
+                padding: 3px 12px;
+            }
+            .note {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .title {
+                font-size: 1.3rem;
+            }
+            .hero {
+                padding: 18px 14px 16px;
+            }
+            .panel {
+                padding: 16px 14px 18px;
+            }
+            .btn {
+                font-size: 0.8rem;
+                padding: 10px 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="wrap">
+        <!-- ─── HEADER ─── -->
+        <header class="hero neo">
+            <div class="badge">⚡ WebRTC · MediaRecorder</div>
+            <h1 class="title">
+                Brutal Screen Recorder<br />
+                <span class="highlight">No Install</span>
+            </h1>
+            <p class="note">
+                Tip: Screen capture uses <strong>getDisplayMedia</strong> and <strong>MediaRecorder</strong>.
+                Best supported in <strong>Chrome / Edge</strong>.
+            </p>
+        </header>
+
+        <!-- ─── RECORDER PANEL ─── -->
+        <section class="panel neo">
+            <div class="controls">
+                <button class="btn btn-primary" id="btnRecord" type="button">
+                    <span class="btn-icon">⏺</span>
+                    <span id="btnLabel">Start Recording</span>
+                </button>
+                <button class="btn btn-secondary" id="btnSave" type="button" disabled>
+                    <span class="btn-icon">⬇</span>
+                    Download Video
+                </button>
+                <div class="status" id="status" role="status" aria-live="polite">
+                    <span class="dot idle" id="statusDot"></span>
+                    <span id="statusText">Idle.</span>
+                </div>
+            </div>
+
+            <div class="preview" id="previewContainer">
+                <video id="preview" class="video" controls playsinline></video>
+                <div class="hint" id="hint">
+                    <div class="icon-big">🖥️</div>
+                    <div>Your preview will appear here<br />after you stop sharing.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─── INFO PANEL ─── -->
+        <section class="panel neo">
+            <h3 class="subhead">🔒 Privacy First</h3>
+            <p class="text">
+                The recorded video stays <strong>only in your browser</strong>. Nothing is uploaded to any server.
+                Refreshing the page will lose the current recording, so download it after you finish.
+            </p>
+
+            <h3 class="subhead">📹 How to record</h3>
+            <ol class="steps">
+                <li>Click <strong>Start Recording</strong>, choose a screen or window, then click <strong>Share</strong>.</li>
+                <li>
+                    When finished, click <strong>Stop sharing</strong> in the browser’s sharing bar,
+                    or click the button again. Return here to preview and click <strong>Download Video</strong>.
+                </li>
+            </ol>
+        </section>
+
+        <!-- ─── FOOTER ─── -->
+        <footer class="footer">
+            <span class="small">
+                Works on HTTPS · Some browsers (especially Safari) may not support screen recording.
+            </span>
+        </footer>
+    </main>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ─── DOM refs ───
+            const btnRecord = document.getElementById('btnRecord');
+            const btnSave = document.getElementById('btnSave');
+            const btnLabel = document.getElementById('btnLabel');
+            const statusText = document.getElementById('statusText');
+            const statusDot = document.getElementById('statusDot');
+            const previewVideo = document.getElementById('preview');
+            const hint = document.getElementById('hint');
+            const previewContainer = document.getElementById('previewContainer');
+
+            // ─── State ───
+            let mediaStream = null;
+            let mediaRecorder = null;
+            let recordedChunks = [];
+            let isRecording = false;
+
+            // ─── Helpers ───
+            function setStatus(text, type) {
+                statusText.textContent = text;
+                statusDot.className = 'dot ' + type;
+            }
+
+            function setRecordingUI(active) {
+                isRecording = active;
+                if (active) {
+                    btnRecord.classList.add('is-recording');
+                    btnLabel.textContent = 'Stop Recording';
+                    btnRecord.querySelector('.btn-icon').textContent = '⏹';
+                    setStatus('Recording…', 'recording');
+                    btnSave.disabled = true;
+                } else {
+                    btnRecord.classList.remove('is-recording');
+                    btnLabel.textContent = 'Start Recording';
+                    btnRecord.querySelector('.btn-icon').textContent = '⏺';
+                    setStatus('Stopped.', 'stopped');
+                    // Enable save if we have chunks
+                    if (recordedChunks.length > 0) {
+                        btnSave.disabled = false;
+                        setStatus('Ready to download.', 'ready');
+                    } else {
+                        setStatus('Idle.', 'idle');
+                    }
+                }
+            }
+
+            function resetAll() {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+                if (mediaRecorder) {
+                    if (mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                    mediaRecorder = null;
+                }
+                recordedChunks = [];
+                isRecording = false;
+                btnRecord.classList.remove('is-recording');
+                btnLabel.textContent = 'Start Recording';
+                btnRecord.querySelector('.btn-icon').textContent = '⏺';
+                btnSave.disabled = true;
+                previewVideo.src = '';
+                previewVideo.removeAttribute('src');
+                hint.classList.remove('hidden');
+                previewContainer.classList.remove('has-video');
+                setStatus('Idle.', 'idle');
+            }
+
+            // ─── Save / Download ───
+            function downloadRecording() {
+                if (recordedChunks.length === 0) {
+                    setStatus('No recording to download.', 'idle');
+                    return;
+                }
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `recording-${new Date().toISOString().slice(0,19).replace(/[:-]/g, '')}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+                setStatus('Download started ✓', 'ready');
+            }
+
+            // ─── Stop recording (internal) ───
+            function stopRecording() {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+                setRecordingUI(false);
+                // If we have chunks, enable save & show preview
+                if (recordedChunks.length > 0) {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    previewVideo.src = url;
+                    previewVideo.load();
+                    hint.classList.add('hidden');
+                    previewContainer.classList.add('has-video');
+                    btnSave.disabled = false;
+                    setStatus('Ready to download.', 'ready');
+                } else {
+                    setStatus('No data recorded.', 'idle');
+                }
+            }
+
+            // ─── Start recording ───
+            async function startRecording() {
+                try {
+                    // Request screen
+                    const stream = await navigator.mediaDevices.getDisplayMedia({
+                        video: {
+                            cursor: 'always',
+                            displaySurface: 'monitor',
+                        },
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 44100,
+                        },
+                    });
+
+                    // If user cancels, stream may be null or tracks empty
+                    if (!stream || stream.getTracks().length === 0) {
+                        setStatus('No stream selected.', 'idle');
+                        return;
+                    }
+
+                    mediaStream = stream;
+
+                    // Also capture audio from microphone if available (optional)
+                    // But we only use the screen stream's audio if present
+
+                    // Setup recorder
+                    const options = {
+                        mimeType: 'video/webm;codecs=vp9,opus',
+                        videoBitsPerSecond: 2500000,
+                    };
+
+                    // Fallback if vp9 not supported
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options.mimeType = 'video/webm;codecs=vp8,opus';
+                        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                            options.mimeType = 'video/webm';
+                        }
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream, options);
+                    recordedChunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data && e.data.size > 0) {
+                            recordedChunks.push(e.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        // Already handled in stopRecording, but safe fallback
+                        if (recordedChunks.length > 0) {
+                            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                            const url = URL.createObjectURL(blob);
+                            previewVideo.src = url;
+                            previewVideo.load();
+                            hint.classList.add('hidden');
+                            previewContainer.classList.add('has-video');
+                            btnSave.disabled = false;
+                            setStatus('Ready to download.', 'ready');
+                        }
+                        // If we called stop from UI, we already set state.
+                        // But if stop came from browser bar, we need to sync.
+                        if (isRecording) {
+                            setRecordingUI(false);
+                            if (recordedChunks.length > 0) {
+                                btnSave.disabled = false;
+                                setStatus('Ready to download.', 'ready');
+                            } else {
+                                setStatus('No data recorded.', 'idle');
+                            }
+                        }
+                    };
+
+                    // Start recording
+                    mediaRecorder.start(1000); // capture in 1s chunks
+                    setRecordingUI(true);
+                    setStatus('Recording…', 'recording');
+
+                    // If the user stops sharing via browser bar, we get a track ended event
+                    const track = stream.getVideoTracks()[0];
+                    if (track) {
+                        track.onended = () => {
+                            if (isRecording) {
+                                stopRecording();
+                            }
+                        };
+                    }
+
+                } catch (err) {
+                    console.error('Error starting recording:', err);
+                    setStatus('❌ ' + (err.message || 'Could not start recording.'), 'idle');
+                    resetAll();
+                }
+            }
+
+            // ─── Toggle recording ───
+            function toggleRecording() {
+                if (isRecording) {
+                    // User wants to stop
+                    stopRecording();
+                } else {
+                    // Start fresh
+                    resetAll();
+                    startRecording();
+                }
+            }
+
+            // ─── Save button handler ───
+            function handleSave() {
+                if (recordedChunks.length === 0) {
+                    setStatus('Nothing to save.', 'idle');
+                    return;
+                }
+                downloadRecording();
+            }
+
+            // ─── Attach events ───
+            btnRecord.addEventListener('click', toggleRecording);
+            btnSave.addEventListener('click', handleSave);
+
+            // ─── Cleanup on page unload ───
+            window.addEventListener('beforeunload', () => {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(t => t.stop());
+                }
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                }
+                // Revoke any object URL
+                if (previewVideo.src && previewVideo.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(previewVideo.src);
+                }
+            });
+
+            // ─── Keyboard shortcut: Space to toggle? Only if not focused on input ───
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' && e.target === document.body) {
+                    e.preventDefault();
+                    toggleRecording();
+                }
+            });
+
+            // ─── Initial status ───
+            setStatus('Idle. Press Space to start.', 'idle');
+
+            console.log('🎬 Brutal Screen Recorder ready.');
+        })();
+    </script>
+
+</body>
+</html>

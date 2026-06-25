@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pro Drip Studio</title>
+	<script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<style>
+		:root {
+			--greyLight-1: #E4EBF5;
+			--greyLight-2: #c8d0e7;
+			--white: #FFFFFF;
+			--greyDark: #9baacf;
+			--active-color: #ff4757;
+			--target-color: #2e86de;
+			--mix-percentage: 50%;
+			--mixed-color: color-mix(in srgb, var(--active-color), var(--target-color) var(--mix-percentage));
+			--shadow: .3rem .3rem .6rem var(--greyLight-2), -.2rem -.2rem .5rem var(--white);
+			--inner-shadow: inset .2rem .2rem .5rem var(--greyLight-2), inset -.2rem -.2rem .5rem var(--white);
+		}
+
+		body {
+			background-color: var(--greyLight-1);
+			font-family: 'Segoe UI', system-ui, sans-serif;
+			overflow: hidden;
+			height: 100vh;
+			margin: 0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			color: #444;
+		}
+
+		#bgCanvas {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			z-index: -1;
+			opacity: 0.6;
+		}
+
+		.tile-card {
+			background: rgba(228, 235, 245, 0.85);
+			backdrop-filter: blur(15px);
+			box-shadow: var(--shadow);
+			border-radius: 1.5rem;
+			padding: 1.5rem;
+			border: 1px solid rgba(255, 255, 255, 0.5);
+		}
+
+		.btn-tactile {
+			width: 42px;
+			height: 42px;
+			border-radius: 12px;
+			box-shadow: var(--shadow);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			cursor: pointer;
+			transition: all 0.1s ease;
+			border: none;
+			background: var(--greyLight-1);
+			color: #6b7280;
+			position: relative;
+			user-select: none;
+		}
+
+		.btn-tactile:hover {
+			color: #333;
+		}
+
+		.btn-tactile:active {
+			transform: translateY(2px);
+			box-shadow: var(--inner-shadow);
+		}
+
+		.btn-tactile.active {
+			background: linear-gradient(145deg, #e6e9ef, #ffffff);
+			color: var(--active-color);
+			box-shadow: var(--inner-shadow);
+		}
+
+		.swatch-wrapper {
+			width: 28px;
+			height: 28px;
+			border-radius: 50%;
+			overflow: hidden;
+			box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.1);
+			cursor: pointer;
+			transition: transform 0.1s;
+		}
+
+		.swatch-wrapper:hover {
+			transform: scale(1.1);
+		}
+
+		.swatch-inner {
+			width: 100%;
+			height: 100%;
+		}
+
+		input[type="range"] {
+			-webkit-appearance: none;
+			width: 100%;
+			height: 6px;
+			background: var(--greyLight-1);
+			box-shadow: var(--inner-shadow);
+			border-radius: 5px;
+			outline: none;
+		}
+
+		input[type="range"]::-webkit-slider-thumb {
+			-webkit-appearance: none;
+			width: 18px;
+			height: 18px;
+			background: var(--white);
+			box-shadow: var(--shadow);
+			border-radius: 50%;
+			cursor: grab;
+		}
+
+		.canvas-wrapper {
+			position: relative;
+			border-radius: 1.5rem;
+			overflow: hidden;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+			border: 1px solid white;
+		}
+
+		#paintCanvas {
+			display: block;
+			touch-action: none;
+			cursor: none;
+			/* Hide default cursor */
+		}
+
+		/* Custom Cursor */
+		#cursor {
+			position: fixed;
+			pointer-events: none;
+			z-index: 9999;
+			border-radius: 50%;
+			border: 2px solid rgba(0, 0, 0, 0.3);
+			transform: translate(-50%, -50%);
+			transition: width 0.1s, height 0.1s, opacity 0.1s;
+			mix-blend-mode: difference;
+		}
+
+		#cursor.active {
+			border-color: rgba(255, 255, 255, 0.8);
+			background: rgba(255, 255, 255, 0.1);
+		}
+
+		#cursor.hidden {
+			opacity: 0;
+		}
+
+		/* Layout */
+		.app-container {
+			display: flex;
+			gap: 1.5rem;
+			height: 90vh;
+			max-width: 1600px;
+			width: 100%;
+			padding: 0 2rem;
+		}
+
+		.toolbar {
+			display: flex;
+			flex-direction: column;
+			gap: 1rem;
+			width: 280px;
+			height: 100%;
+			overflow-y: auto;
+		}
+
+		.toolbar::-webkit-scrollbar {
+			width: 4px;
+		}
+
+		.toolbar::-webkit-scrollbar-thumb {
+			background: var(--greyDark);
+			border-radius: 10px;
+		}
+
+		.section-label {
+			font-size: 0.65rem;
+			font-weight: 700;
+			color: #9baacf;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			margin-bottom: 0.25rem;
+			display: block;
+		}
+
+		/* Tool group styling */
+		.tool-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 0.5rem;
+		}
+
+		.mixer-preview {
+			height: 40px;
+			border-radius: 10px;
+			background: var(--mixed-color);
+			box-shadow: var(--inner-shadow);
+			margin-bottom: 0.5rem;
+			transition: background 0.2s;
+		}
+
+		.history-btn {
+			padding: 0.5rem 1rem;
+			border-radius: 8px;
+			font-size: 0.75rem;
+			background: var(--greyLight-1);
+			box-shadow: var(--shadow);
+			color: #666;
+			font-weight: 600;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.5rem;
+		}
+
+		.history-btn:active {
+			box-shadow: var(--inner-shadow);
+		}
+
+		.history-btn:disabled {
+			opacity: 0.4;
+			cursor: not-allowed;
+		}
+
+		/* Responsive */
+		@media (max-width: 900px) {
+			.app-container {
+				flex-direction: column;
+				height: auto;
+				padding: 1rem;
+				overflow-y: auto;
+			}
+
+			.toolbar {
+				width: 100%;
+				height: auto;
+				flex-direction: row;
+				flex-wrap: wrap;
+				justify-content: center;
+			}
+
+			.canvas-wrapper {
+				width: 100% !important;
+				height: 60vh !important;
+			}
+		}
+	</style>
+</head>
+
+<body>
+
+	<canvas id="bgCanvas"></canvas>
+	<div id="cursor" class="hidden"></div>
+
+	<div class="app-container">
+		<!-- Sidebar -->
+		<aside class="toolbar tile-card">
+			<h2 class="text-md font-bold text-gray-500 text-center uppercase tracking-tight mb-2">
+				<i class="fa-solid fa-paintbrush mr-2"></i>Studio Pro
+			</h2>
+
+			<!-- Tools -->
+			<div class="section-label">Tools</div>
+			<div class="tool-grid">
+				<button class="btn-tactile active" data-tool="brush" title="Brush"><i class="fa-solid fa-paintbrush"></i></button>
+				<button class="btn-tactile" data-tool="spray" title="Spray"><i class="fa-solid fa-spray-can"></i></button>
+				<button class="btn-tactile" data-tool="stamp" title="Stamp"><i class="fa-solid fa-hand"></i></button>
+				<button class="btn-tactile" data-tool="eraser" title="Eraser"><i class="fa-solid fa-eraser"></i></button>
+				<button class="btn-tactile" data-tool="fill" title="Fill"><i class="fa-solid fa-fill-drip"></i></button>
+				<button class="btn-tactile" data-tool="smudge" title="Smudge"><i class="fa-solid fa-hand-pointer"></i></button>
+				<button class="btn-tactile" onclick="splatter()" title="Splatter Effect"><i class="fa-solid fa-droplet"></i></button>
+				<button class="btn-tactile" onclick="clearCanvas()" title="Clear"><i class="fa-solid fa-trash"></i></button>
+			</div>
+
+			<!-- Colors -->
+			<div class="section-label mt-2">Colors</div>
+			<div class="flex gap-2 items-center">
+				<div class="grid grid-cols-4 gap-2 flex-grow">
+					<div class="swatch-wrapper" onclick="setColor('#ff4757')">
+						<div class="swatch-inner" style="background:#ff4757"></div>
+					</div>
+					<div class="swatch-wrapper" onclick="setColor('#2e86de')">
+						<div class="swatch-inner" style="background:#2e86de"></div>
+					</div>
+					<div class="swatch-wrapper" onclick="setColor('#2ed573')">
+						<div class="swatch-inner" style="background:#2ed573"></div>
+					</div>
+					<div class="swatch-wrapper" onclick="setColor('#ffa502')">
+						<div class="swatch-inner" style="background:#ffa502"></div>
+					</div>
+					<div class="swatch-wrapper" onclick="setColor('#a55eea')">
+						<div class="swatch-inner" style="background:#a55eea"></div>
+					</div>
+					<div class="swatch-wrapper" onclick="setColor('#2f3542')">
+						<div class="swatch-inner" style="background:#2f3542"></div>
+					</div>
+					<div class="swatch-wrapper" onclick="setColor('#ffffff')">
+						<div class="swatch-inner" style="background:#ffffff"></div>
+					</div>
+					<div class="swatch-wrapper">
+						<input type="color" id="colorPicker" value="#ff4757" class="w-full h-full opacity-0 absolute cursor-pointer">
+						<div class="swatch-inner" id="customSwatch" style="background:linear-gradient(45deg, #ccc 50%, #fff 50%)"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Sliders -->
+			<div class="mt-3 space-y-3">
+				<div>
+					<div class="flex justify-between text-xs text-gray-500 mb-1">
+						<span>Size</span><span id="sizeVal">30</span>
+					</div>
+					<input type="range" id="sizeSlider" min="2" max="150" value="30">
+				</div>
+				<div>
+					<div class="flex justify-between text-xs text-gray-500 mb-1">
+						<span>Opacity</span><span id="opacityVal">100%</span>
+					</div>
+					<input type="range" id="opacitySlider" min="10" max="100" value="100">
+				</div>
+			</div>
+
+			<!-- Mixer -->
+			<div class="mt-3 p-3 bg-white/30 rounded-xl">
+				<div class="section-label text-center">Wet Mix</div>
+				<div class="mixer-preview" id="mixPreview"></div>
+				<input type="range" id="mixSlider" min="0" max="100" value="50">
+				<div class="text-center text-[10px] text-gray-400 mt-1">Blend New Color vs Canvas</div>
+			</div>
+
+			<!-- Actions -->
+			<div class="mt-auto pt-3 flex gap-2">
+				<button class="history-btn flex-1" id="undoBtn" disabled onclick="undo()"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+				<button class="history-btn flex-1" id="redoBtn" disabled onclick="redo()"><i class="fa-solid fa-rotate-right"></i> Redo</button>
+			</div>
+			<button class="history-btn w-full mt-2" onclick="downloadImage()">
+				<i class="fa-solid fa-download"></i> Save Image
+			</button>
+		</aside>
+
+		<!-- Canvas Area -->
+		<main class="flex-grow flex flex-col gap-4 items-center justify-center">
+			<div class="canvas-wrapper" id="canvasBox" style="width: 900px; height: 600px;">
+				<canvas id="paintCanvas"></canvas>
+			</div>
+			<div class="text-[11px] text-gray-400 flex gap-4">
+				<span><i class="fa-solid fa-computer-mouse mr-1"></i> Left Click: Paint</span>
+				<span><i class="fa-solid fa-hand-pointer mr-1"></i> Drag: Draw</span>
+				<span><i class="fa-solid fa-arrows-alt mr-1"></i> Resize: Bottom Right</span>
+			</div>
+		</main>
+	</div>
+
+	<!-- Hidden CSS Sampler -->
+	<div id="css-sampler" style="display:none"></div>
+
+	<script>
+		// --- 1. INIT & STATE ---
+		const canvas = document.getElementById('paintCanvas');
+		const ctx = canvas.getContext('2d', {
+			willReadFrequently: true
+		});
+		const bgCanvas = document.getElementById('bgCanvas');
+		const bgCtx = bgCanvas.getContext('2d');
+		const cursorEl = document.getElementById('cursor');
+		const container = document.getElementById('canvasBox');
+		const colorPicker = document.getElementById('colorPicker');
+		let state = {
+			tool: 'brush',
+			color: '#ff4757',
+			size: 30,
+			opacity: 1,
+			mixRatio: 0.5,
+			isDrawing: false,
+			lastX: 0,
+			lastY: 0,
+			history: [],
+			historyIndex: -1,
+			maxHistory: 30
+		};
+		// --- 2. BACKGROUND ANIMATION ---
+		let bgPoints = [];
+		const bgOpts = {
+			count: 8,
+			range: {
+				x: 40,
+				y: 120
+			},
+			duration: {
+				min: 40,
+				max: 100
+			},
+			level: 0.4
+		};
+		class WavePoint {
+			constructor(x, y) {
+				this.baseX = x;
+				this.baseY = y;
+				this.x = x;
+				this.y = y;
+				this.vx = 0;
+				this.vy = 0;
+				this.setTarget();
+			}
+			setTarget() {
+				this.targetX = this.baseX + (Math.random() - 0.5) * bgOpts.range.x;
+				this.targetY = this.baseY + (Math.random() - 0.5) * bgOpts.range.y;
+				this.tick = 0;
+				this.life = Math.random() * 200 + 100;
+			}
+			update() {
+				this.tick++;
+				if (this.tick > this.life) this.setTarget();
+				const prog = this.tick / this.life;
+				const ease = Math.sin(prog * Math.PI);
+				this.x = this.baseX + (this.targetX - this.baseX) * ease;
+				this.y = this.baseY + (this.targetY - this.baseY) * ease;
+			}
+		}
+
+		function initBg() {
+			bgCanvas.width = window.innerWidth;
+			bgCanvas.height = window.innerHeight;
+			bgPoints = [];
+			const w = bgCanvas.width + 200;
+			const spacing = w / bgOpts.count;
+			for (let i = 0; i <= bgOpts.count + 2; i++) {
+				bgPoints.push(new WavePoint(i * spacing - 100, bgCanvas.height * bgOpts.level));
+			}
+		}
+
+		function drawBg() {
+			bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+			// Draw gradient background
+			const grd = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+			grd.addColorStop(0, '#e0e5ec');
+			grd.addColorStop(1, '#d1d9e6');
+			bgCtx.fillStyle = grd;
+			bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+			// Draw waves
+			bgCtx.beginPath();
+			bgCtx.moveTo(bgPoints[0].x, bgPoints[0].y);
+			for (let i = 0; i < bgPoints.length - 1; i++) {
+				const xc = (bgPoints[i].x + bgPoints[i + 1].x) / 2;
+				const yc = (bgPoints[i].y + bgPoints[i + 1].y) / 2;
+				bgCtx.quadraticCurveTo(bgPoints[i].x, bgPoints[i].y, xc, yc);
+			}
+			bgCtx.lineTo(bgCanvas.width + 500, bgCanvas.height + 500);
+			bgCtx.lineTo(-500, bgCanvas.height + 500);
+			bgCtx.closePath();
+			// Glassmorphism wave
+			bgCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+			bgCtx.fill();
+			bgCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+			bgCtx.lineWidth = 2;
+			bgCtx.stroke();
+			bgPoints.forEach(p => p.update());
+			requestAnimationFrame(drawBg);
+		}
+		// --- 3. CANVAS LOGIC ---
+		function resizeCanvas() {
+			const rect = container.getBoundingClientRect();
+			const w = Math.floor(rect.width);
+			const h = Math.floor(rect.height);
+			// Save current image
+			const tempCanvas = document.createElement('canvas');
+			tempCanvas.width = canvas.width;
+			tempCanvas.height = canvas.height;
+			tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+			canvas.width = w;
+			canvas.height = h;
+			// Fill white
+			ctx.fillStyle = '#ffffff';
+			ctx.fillRect(0, 0, w, h);
+			// Restore image
+			ctx.drawImage(tempCanvas, 0, 0);
+		}
+
+		function saveState() {
+			// Remove future states if we undid then drew
+			state.history = state.history.slice(0, state.historyIndex + 1);
+			const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+			state.history.push(imgData);
+			if (state.history.length > state.maxHistory) {
+				state.history.shift();
+			} else {
+				state.historyIndex++;
+			}
+			updateButtons();
+		}
+
+		function undo() {
+			if (state.historyIndex > 0) {
+				state.historyIndex--;
+				ctx.putImageData(state.history[state.historyIndex], 0, 0);
+			}
+			updateButtons();
+		}
+
+		function redo() {
+			if (state.historyIndex < state.history.length - 1) {
+				state.historyIndex++;
+				ctx.putImageData(state.history[state.historyIndex], 0, 0);
+			}
+			updateButtons();
+		}
+
+		function updateButtons() {
+			document.getElementById('undoBtn').disabled = state.historyIndex <= 0;
+			document.getElementById('redoBtn').disabled = state.historyIndex >= state.history.length - 1;
+		}
+
+		function getPos(e) {
+			const rect = canvas.getBoundingClientRect();
+			const x = (e.clientX ?? e.touches?.[0].clientX) - rect.left;
+			const y = (e.clientY ?? e.touches?.[0].clientY) - rect.top;
+			return {
+				x,
+				y
+			};
+		}
+		// --- 4. DRAWING TOOLS ---
+		function getColorAt(x, y) {
+			const pixel = ctx.getImageData(Math.floor(x), Math.floor(y), 1, 1).data;
+			if (pixel[3] === 0) return null; // Transparent
+			// Ignore near-white
+			if (pixel[0] > 240 && pixel[1] > 240 && pixel[2] > 240) return null;
+			return `rgba(${pixel[0]}, ${pixel[1]}, ${pixel[2]}, ${pixel[3]/255})`;
+		}
+
+		function mixColor(baseColor) {
+			// Basic logic: if we are using brush, mix with underlying color if it exists
+			// This is handled inside specific tools usually for performance
+			const sampler = document.getElementById('css-sampler');
+			// Mix logic handled in tools
+			return baseColor;
+		}
+		// Tool Implementations
+		const tools = {
+			brush: (x, y, px, py) => {
+				const existing = getColorAt(x, y);
+				let color = state.color;
+				if (existing) {
+					document.getElementById('css-sampler').style.color = `color-mix(in srgb, ${state.color}, ${existing} ${Math.floor(state.mixRatio * 100)}%)`;
+					color = getComputedStyle(document.getElementById('css-sampler')).color;
+				}
+				ctx.globalAlpha = state.opacity;
+				ctx.strokeStyle = color;
+				ctx.lineWidth = state.size;
+				ctx.lineCap = 'round';
+				ctx.lineJoin = 'round';
+				ctx.beginPath();
+				ctx.moveTo(px, py);
+				ctx.lineTo(x, y);
+				ctx.stroke();
+				// Drip logic
+				if (Math.random() > 0.9) {
+					ctx.beginPath();
+					ctx.arc(x + (Math.random() - 0.5) * 10, y + (Math.random() - 0.5) * 10, state.size / 4, 0, Math.PI * 2);
+					ctx.fillStyle = color;
+					ctx.globalAlpha = state.opacity * 0.8;
+					ctx.fill();
+				}
+			},
+			spray: (x, y) => {
+				const density = state.size * 2;
+				ctx.globalAlpha = state.opacity * 0.15;
+				ctx.fillStyle = state.color;
+				for (let i = 0; i < density; i++) {
+					const angle = Math.random() * Math.PI * 2;
+					const radius = Math.random() * state.size;
+					const px = x + Math.cos(angle) * radius;
+					const py = y + Math.sin(angle) * radius;
+					ctx.beginPath();
+					ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+					ctx.fill();
+				}
+			},
+			eraser: (x, y, px, py) => {
+				ctx.globalCompositeOperation = 'destination-out';
+				ctx.globalAlpha = 1;
+				ctx.strokeStyle = 'rgba(0,0,0,1)';
+				ctx.lineWidth = state.size;
+				ctx.lineCap = 'round';
+				ctx.beginPath();
+				ctx.moveTo(px, py);
+				ctx.lineTo(x, y);
+				ctx.stroke();
+				ctx.globalCompositeOperation = 'source-over';
+			},
+			smudge: (x, y, px, py) => {
+				// Simple smudge: pick color from src, draw with low opacity
+				const dist = Math.hypot(x - px, y - py);
+				const steps = Math.max(1, Math.floor(dist / 2));
+				for (let i = 0; i < steps; i++) {
+					const t = i / steps;
+					const cx = px + (x - px) * t;
+					const cy = py + (y - py) * t;
+					const col = getColorAt(cx, cy);
+					if (col) {
+						ctx.globalAlpha = 0.3 * state.opacity;
+						ctx.strokeStyle = col;
+						ctx.lineWidth = state.size;
+						ctx.lineCap = 'round';
+						ctx.beginPath();
+						ctx.moveTo(cx, cy);
+						ctx.lineTo(cx + (x - px) * 0.1, cy + (y - py) * 0.1); // Slight movement
+						ctx.stroke();
+					}
+				}
+			},
+			fill: (x, y) => {
+				// Simple solid fill circle for now (Flood fill is too heavy for main thread)
+				ctx.globalAlpha = state.opacity * 0.8;
+				ctx.fillStyle = state.color;
+				ctx.beginPath();
+				ctx.arc(x, y, state.size, 0, Math.PI * 2);
+				ctx.fill();
+				// Texture
+				ctx.globalAlpha = state.opacity * 0.2;
+				ctx.stroke();
+			},
+			stamp: (x, y) => {
+				const size = state.size;
+				ctx.save();
+				ctx.translate(x, y);
+				ctx.rotate(Math.random() * Math.PI * 2);
+				// Draw Hand Shape
+				ctx.beginPath();
+				ctx.fillStyle = state.color;
+				ctx.globalAlpha = state.opacity;
+				// Palm
+				ctx.ellipse(0, 0, size * 0.6, size * 0.8, 0, 0, Math.PI * 2);
+				ctx.fill();
+				// Fingers
+				const fingerSize = size * 0.2;
+				const positions = [{
+						x: -size * 0.4,
+						y: -size * 0.6,
+						rot: -0.2
+					},
+					{
+						x: -size * 0.15,
+						y: -size * 0.8,
+						rot: 0
+					},
+					{
+						x: size * 0.15,
+						y: -size * 0.8,
+						rot: 0.1
+					},
+					{
+						x: size * 0.4,
+						y: -size * 0.6,
+						rot: 0.3
+					},
+					{
+						x: size * 0.6,
+						y: size * 0.1,
+						rot: 0.8
+					} // Thumb
+				];
+				positions.forEach(f => {
+					ctx.save();
+					ctx.translate(f.x, f.y);
+					ctx.rotate(f.rot);
+					ctx.beginPath();
+					ctx.ellipse(0, 0, fingerSize, size * 0.4, 0, 0, Math.PI * 2);
+					ctx.fill();
+					ctx.restore();
+				});
+				ctx.restore();
+			}
+		};
+
+		function splatter() {
+			const count = 50 + Math.floor(Math.random() * 50);
+			ctx.globalAlpha = state.opacity;
+			ctx.fillStyle = state.color;
+			for (let i = 0; i < count; i++) {
+				const x = Math.random() * canvas.width;
+				const y = Math.random() * canvas.height;
+				const r = Math.random() * 15 + 2;
+				ctx.beginPath();
+				ctx.arc(x, y, r, 0, Math.PI * 2);
+				ctx.fill();
+			}
+			saveState();
+		}
+		// --- 5. EVENT HANDLERS ---
+		function startDraw(e) {
+			e.preventDefault();
+			state.isDrawing = true;
+			const {
+				x,
+				y
+			} = getPos(e);
+			state.lastX = x;
+			state.lastY = y;
+			if (state.tool === 'stamp' || state.tool === 'fill') {
+				tools[state.tool](x, y);
+				saveState();
+			}
+		}
+
+		function draw(e) {
+			if (!state.isDrawing) return;
+			e.preventDefault();
+			const {
+				x,
+				y
+			} = getPos(e);
+			if (['brush', 'eraser', 'smudge'].includes(state.tool)) {
+				tools[state.tool](x, y, state.lastX, state.lastY);
+			} else if (state.tool === 'spray') {
+				tools.spray(x, y);
+			}
+			state.lastX = x;
+			state.lastY = y;
+		}
+
+		function endDraw() {
+			if (state.isDrawing) {
+				state.isDrawing = false;
+				ctx.globalAlpha = 1;
+				if (['brush', 'spray', 'eraser', 'smudge'].includes(state.tool)) {
+					saveState();
+				}
+			}
+		}
+		// --- 6. UI INTERACTIONS ---
+		// Tool Buttons
+		document.querySelectorAll('[data-tool]').forEach(btn => {
+			btn.addEventListener('click', () => {
+				document.querySelectorAll('[data-tool]').forEach(b => b.classList.remove('active'));
+				btn.classList.add('active');
+				state.tool = btn.dataset.tool;
+				// Reset composite op just in case
+				ctx.globalCompositeOperation = 'source-over';
+			});
+		});
+		// Sliders
+		document.getElementById('sizeSlider').oninput = (e) => {
+			state.size = parseInt(e.target.value);
+			document.getElementById('sizeVal').textContent = state.size;
+			updateCursor(e);
+		};
+		document.getElementById('opacitySlider').oninput = (e) => {
+			state.opacity = parseInt(e.target.value) / 100;
+			document.getElementById('opacityVal').textContent = e.target.value + '%';
+		};
+		document.getElementById('mixSlider').oninput = (e) => {
+			state.mixRatio = parseInt(e.target.value) / 100;
+			// Update preview
+			const preview = document.getElementById('mixPreview');
+			preview.style.background = `color-mix(in srgb, ${state.color}, white ${100 - e.target.value}%)`;
+		};
+		// Colors
+		function setColor(hex) {
+			state.color = hex;
+			document.getElementById('customSwatch').style.background = hex;
+			colorPicker.value = hex;
+			updateMixerPreview();
+		}
+		window.setColor = setColor;
+		colorPicker.addEventListener('input', (e) => {
+			setColor(e.target.value);
+		});
+
+		function updateMixerPreview() {
+			const preview = document.getElementById('mixPreview');
+			preview.style.background = `color-mix(in srgb, ${state.color}, white 50%)`;
+		}
+
+		function updateCursor(e) {
+			if (!e) return;
+			const rect = canvas.getBoundingClientRect();
+			const x = e.clientX;
+			const y = e.clientY;
+			// Check if inside canvas
+			if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+				cursorEl.classList.remove('hidden');
+				cursorEl.style.left = x + 'px';
+				cursorEl.style.top = y + 'px';
+				cursorEl.style.width = state.size + 'px';
+				cursorEl.style.height = state.size + 'px';
+			} else {
+				cursorEl.classList.add('hidden');
+			}
+		}
+		document.addEventListener('mousemove', updateCursor);
+		// --- 7. UTILS ---
+		function clearCanvas() {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.fillStyle = '#ffffff';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			saveState();
+		}
+
+		function downloadImage() {
+			const link = document.createElement('a');
+			link.download = 'drip-art.png';
+			link.href = canvas.toDataURL('image/png');
+			link.click();
+		}
+		// Resize Observer
+		const ro = new ResizeObserver(entries => {
+			for (let entry of entries) {
+				if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+					resizeCanvas();
+				}
+			}
+		});
+		ro.observe(container);
+		// --- 8. INIT ---
+		function init() {
+			initBg();
+			drawBg();
+			resizeCanvas();
+			clearCanvas(); // Creates initial white state
+			updateMixerPreview();
+			// Canvas Events
+			canvas.addEventListener('mousedown', startDraw);
+			canvas.addEventListener('mousemove', draw);
+			canvas.addEventListener('mouseup', endDraw);
+			canvas.addEventListener('mouseleave', endDraw);
+			canvas.addEventListener('touchstart', startDraw, {
+				passive: false
+			});
+			canvas.addEventListener('touchmove', draw, {
+				passive: false
+			});
+			canvas.addEventListener('touchend', endDraw);
+			// Global mouse tracking for cursor
+			document.addEventListener('mousedown', () => cursorEl.classList.add('active'));
+			document.addEventListener('mouseup', () => cursorEl.classList.remove('active'));
+		}
+		init();
+	</script>
+</body>
+
+</html>

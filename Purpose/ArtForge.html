@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ArtForge Pro · advanced painting studio</title>
+  <style>
+    * {
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0e121f;
+      font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .app-container {
+      max-width: 1400px;
+      width: 100%;
+      background: #1a1f2e;
+      border-radius: 1.8rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      overflow: hidden;
+      padding: 1rem;
+    }
+
+    /* main layout */
+    .studio-layout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* canvas area */
+    .canvas-area {
+      flex: 3;
+      min-width: 280px;
+      background: #252c3f;
+      border-radius: 1.2rem;
+      padding: 0.8rem;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: #ddd;
+      border-radius: 0.8rem;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    canvas {
+      display: block;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: crosshair;
+    }
+
+    #mainCanvas {
+      background: white;
+    }
+
+    #previewCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      background: transparent;
+    }
+
+    /* tools panel */
+    .tools-panel {
+      flex: 1.2;
+      min-width: 260px;
+      background: #131829;
+      border-radius: 1.2rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      overflow-y: auto;
+      max-height: 85vh;
+    }
+
+    .section {
+      background: #1e243a;
+      border-radius: 1rem;
+      padding: 0.8rem;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #9bb1e0;
+      margin-bottom: 0.8rem;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tool-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tool-btn {
+      background: #2c344f;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #eef4ff;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: 0.1s;
+    }
+
+    .tool-btn.active {
+      background: #4c7db5;
+      box-shadow: 0 0 6px #7aaee0;
+    }
+
+    .tool-btn:hover {
+      background: #3e4a70;
+    }
+
+    .color-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #colorPicker {
+      width: 48px;
+      height: 48px;
+      border-radius: 30px;
+      border: 2px solid #8caeef;
+      background: white;
+    }
+
+    .slider-group {
+      margin: 10px 0;
+    }
+
+    .slider-group label {
+      font-size: 0.7rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin-top: 5px;
+    }
+
+    .layer-list {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .layer-item {
+      background: #12172b;
+      padding: 6px 10px;
+      border-radius: 30px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+
+    .layer-item.active {
+      background: #2f4b74;
+    }
+
+    .badge {
+      background: #0b0f1c;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    button.icon-btn {
+      background: #2c344f;
+      border: none;
+      padding: 6px;
+      border-radius: 30px;
+      color: white;
+      cursor: pointer;
+    }
+
+    hr {
+      border-color: #2e3a5a;
+      margin: 8px 0;
+    }
+
+    @media (max-width: 800px) {
+      .studio-layout {
+        flex-direction: column;
+      }
+    }
+  </style>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<div class="app-container">
+  <div class="studio-layout">
+    <!-- Canvas Section -->
+    <div class="canvas-area">
+      <div class="canvas-wrapper">
+        <canvas id="mainCanvas" width="800" height="500" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/500"></canvas>
+        <canvas id="previewCanvas" width="800" height="500" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/500"></canvas>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 12px; gap: 8px; flex-wrap: wrap;">
+        <button id="zoomInBtn" class="tool-btn"><i class="fas fa-search-plus"></i> Zoom +</button>
+        <button id="zoomOutBtn" class="tool-btn"><i class="fas fa-search-minus"></i> Zoom -</button>
+        <button id="resetViewBtn" class="tool-btn"><i class="fas fa-expand"></i> Reset</button>
+        <button id="exportProjectBtn" class="tool-btn"><i class="fas fa-file-export"></i> Export</button>
+      </div>
+    </div>
+
+    <!-- Tools Panel -->
+    <div class="tools-panel">
+      <!-- Brush tools -->
+      <div class="section">
+        <div class="section-title"><i class="fas fa-paintbrush"></i> Brush Engine</div>
+        <div class="tool-grid">
+          <button id="brushTool" class="tool-btn active"><i class="fas fa-paint-brush"></i> Brush</button>
+          <button id="eraserTool" class="tool-btn"><i class="fas fa-eraser"></i> Eraser</button>
+          <button id="fillTool" class="tool-btn"><i class="fas fa-fill-drip"></i> Fill</button>
+          <button id="smudgeTool" class="tool-btn"><i class="fas fa-hand-peace"></i> Smudge</button>
+        </div>
+        <div class="slider-group">
+          <label>Size <span id="sizeValue">6px</span></label>
+          <input type="range" id="brushSize" min="1" max="60" value="6" step="1">
+        </div>
+        <div class="slider-group">
+          <label>Opacity <span id="opacityValue">100%</span></label>
+          <input type="range" id="brushOpacity" min="1" max="100" value="100" step="1">
+        </div>
+        <div class="color-row">
+          <input type="color" id="colorPicker" value="#FF6B4A">
+          <button id="swapColorsBtn" class="tool-btn"><i class="fas fa-exchange-alt"></i> Swap</button>
+        </div>
+      </div>
+
+      <!-- Symmetry & Advanced -->
+      <div class="section">
+        <div class="section-title"><i class="fas fa-chart-line"></i> Symmetry</div>
+        <div class="tool-grid">
+          <button id="symOff" class="tool-btn active">Off</button>
+          <button id="symHorizontal" class="tool-btn">↔️ X-Axis</button>
+          <button id="symVertical" class="tool-btn">↕️ Y-Axis</button>
+          <button id="symRadial" class="tool-btn">🌀 Radial (4)</button>
+        </div>
+      </div>
+
+      <!-- Layers panel -->
+      <div class="section">
+        <div class="section-title"><i class="fas fa-layer-group"></i> Layers</div>
+        <div class="layer-list" id="layerList"></div>
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button id="addLayerBtn" class="tool-btn"><i class="fas fa-plus"></i> Add</button>
+          <button id="delLayerBtn" class="tool-btn"><i class="fas fa-trash"></i> Delete</button>
+          <select id="blendModeSelect" style="background:#1e243a; color:white; border-radius:30px; padding:6px;">
+            <option value="normal">Normal</option>
+            <option value="multiply">Multiply</option>
+            <option value="screen">Screen</option>
+            <option value="overlay">Overlay</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="section">
+        <div class="section-title"><i class="fas fa-filter"></i> Filters</div>
+        <div class="tool-grid">
+          <button id="filterGrayscale" class="tool-btn">Grayscale</button>
+          <button id="filterBlur" class="tool-btn">Blur</button>
+          <button id="filterInvert" class="tool-btn">Invert</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    // ---------- Canvas setup ----------
+    const canvas = document.getElementById('mainCanvas');
+    const previewCanvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    const previewCtx = previewCanvas.getContext('2d');
+    const W = 800, H = 500;
+    canvas.width = W; canvas.height = H;
+    previewCanvas.width = W; previewCanvas.height = H;
+    
+    // Initial white background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, W, H);
+    
+    // ---------- LAYERS SYSTEM ----------
+    let layers = [];
+    let currentLayerIndex = 0;
+    
+    class Layer {
+      constructor(name, imageData = null) {
+        this.name = name;
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = W;
+        this.canvas.height = H;
+        this.ctx = this.canvas.getContext('2d');
+        if (imageData) {
+          this.ctx.putImageData(imageData, 0, 0);
+        } else {
+          this.ctx.fillStyle = 'rgba(0,0,0,0)';
+          this.ctx.fillRect(0, 0, W, H);
+        }
+        this.visible = true;
+        this.opacity = 1;
+        this.blendMode = 'normal';
+      }
+      
+      getImageData() {
+        return this.ctx.getImageData(0, 0, W, H);
+      }
+      
+      setImageData(imgData) {
+        this.ctx.putImageData(imgData, 0, 0);
+      }
+      
+      clear() {
+        this.ctx.clearRect(0, 0, W, H);
+      }
+    }
+    
+    function initLayers() {
+      const bgLayer = new Layer('Background');
+      bgLayer.ctx.fillStyle = '#FFFFFF';
+      bgLayer.ctx.fillRect(0, 0, W, H);
+      layers = [bgLayer];
+      currentLayerIndex = 0;
+      renderComposite();
+      updateLayersUI();
+    }
+    
+    function renderComposite() {
+      // clear main canvas
+      ctx.clearRect(0, 0, W, H);
+      for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i];
+        if (!layer.visible) continue;
+        const prevGlobalAlpha = ctx.globalAlpha;
+        const prevBlend = ctx.globalCompositeOperation;
+        ctx.globalAlpha = layer.opacity;
+        ctx.globalCompositeOperation = layer.blendMode;
+        ctx.drawImage(layer.canvas, 0, 0);
+        ctx.globalAlpha = prevGlobalAlpha;
+        ctx.globalCompositeOperation = prevBlend;
+      }
+    }
+    
+    function updateLayersUI() {
+      const container = document.getElementById('layerList');
+      container.innerHTML = '';
+      layers.forEach((layer, idx) => {
+        const div = document.createElement('div');
+        div.className = `layer-item ${idx === currentLayerIndex ? 'active' : ''}`;
+        div.innerHTML = `
+          <span><i class="fas fa-layer-group"></i> ${layer.name}</span>
+          <span class="badge">${Math.round(layer.opacity*100)}%</span>
+        `;
+        div.addEventListener('click', () => {
+          currentLayerIndex = idx;
+          updateLayersUI();
+        });
+        container.appendChild(div);
+      });
+    }
+    
+    function getCurrentLayerContext() {
+      return layers[currentLayerIndex].ctx;
+    }
+    
+    function commitToLayer() {
+      renderComposite();
+      // no need to push to undo separately, but we can implement simple history
+      // add to undo stack after each action
+      pushToHistory();
+    }
+    
+    // ---------- UNDO / REDO with layer-aware snapshots (simple full state) ----------
+    let historyStack = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 30;
+    
+    function captureFullState() {
+      const layersCopy = layers.map(layer => {
+        const imgData = layer.getImageData();
+        const newLayer = new Layer(layer.name, imgData);
+        newLayer.opacity = layer.opacity;
+        newLayer.blendMode = layer.blendMode;
+        newLayer.visible = layer.visible;
+        return newLayer;
+      });
+      return { layers: layersCopy, current: currentLayerIndex };
+    }
+    
+    function pushToHistory() {
+      const state = captureFullState();
+      // remove any forward history if we are not at end
+      historyStack = historyStack.slice(0, historyIndex + 1);
+      historyStack.push(state);
+      if (historyStack.length > MAX_HISTORY) historyStack.shift();
+      historyIndex = historyStack.length - 1;
+    }
+    
+    function undo() {
+      if (historyIndex <= 0) return;
+      historyIndex--;
+      restoreState(historyStack[historyIndex]);
+    }
+    
+    function redo() {
+      if (historyIndex >= historyStack.length - 1) return;
+      historyIndex++;
+      restoreState(historyStack[historyIndex]);
+    }
+    
+    function restoreState(state) {
+      layers = state.layers.map(l => {
+        const layer = new Layer(l.name, l.getImageData());
+        layer.opacity = l.opacity;
+        layer.blendMode = l.blendMode;
+        layer.visible = l.visible;
+        return layer;
+      });
+      currentLayerIndex = state.current;
+      renderComposite();
+      updateLayersUI();
+    }
+    
+    // ---------- Drawing variables ----------
+    let currentTool = 'brush';
+    let brushColor = '#FF6B4A';
+    let brushSize = 6;
+    let brushOpacity = 1.0;
+    let eraserMode = false;
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
+    
+    // symmetry types: 'off', 'horizontal', 'vertical', 'radial'
+    let symmetryMode = 'off';
+    
+    // smudge data
+    let smudgeLastPoint = null;
+    
+    // drawing functions with symmetry
+    function applySymmetry(x, y, drawFunc) {
+      drawFunc(x, y);
+      if (symmetryMode === 'horizontal') {
+        drawFunc(W - x, y);
+      } else if (symmetryMode === 'vertical') {
+        drawFunc(x, H - y);
+      } else if (symmetryMode === 'radial') {
+        drawFunc(W - x, y);
+        drawFunc(x, H - y);
+        drawFunc(W - x, H - y);
+      }
+    }
+    
+    function setBrushStyle(ctxLayer) {
+      if (currentTool === 'eraser') {
+        ctxLayer.globalCompositeOperation = 'destination-out';
+        ctxLayer.strokeStyle = 'rgba(0,0,0,1)';
+        ctxLayer.fillStyle = 'rgba(0,0,0,1)';
+      } else if (currentTool === 'smudge') {
+        ctxLayer.globalCompositeOperation = 'source-over';
+        ctxLayer.strokeStyle = brushColor;
+        ctxLayer.fillStyle = brushColor;
+      } else {
+        ctxLayer.globalCompositeOperation = 'source-over';
+        ctxLayer.strokeStyle = brushColor;
+        ctxLayer.fillStyle = brushColor;
+      }
+      ctxLayer.lineWidth = brushSize;
+      ctxLayer.lineCap = 'round';
+      ctxLayer.lineJoin = 'round';
+      ctxLayer.globalAlpha = brushOpacity;
+    }
+    
+    function drawDot(ctxLayer, x, y) {
+      setBrushStyle(ctxLayer);
+      ctxLayer.beginPath();
+      ctxLayer.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+      ctxLayer.fill();
+    }
+    
+    function drawLine(ctxLayer, x0, y0, x1, y1) {
+      setBrushStyle(ctxLayer);
+      ctxLayer.beginPath();
+      ctxLayer.moveTo(x0, y0);
+      ctxLayer.lineTo(x1, y1);
+      ctxLayer.stroke();
+    }
+    
+    // Smudge: copy from previous position (simulate smudge)
+    function smudge(ctxLayer, x, y, lastX, lastY) {
+      if (!lastX || !lastY) return;
+      const radius = brushSize / 2;
+      const imgData = ctxLayer.getImageData(x - radius, y - radius, brushSize, brushSize);
+      ctxLayer.putImageData(imgData, lastX - radius, lastY - radius);
+    }
+    
+    // Flood fill (bucket)
+    function floodFill(x, y, fillColor) {
+      const layer = layers[currentLayerIndex];
+      const imgData = layer.ctx.getImageData(0, 0, W, H);
+      const data = imgData.data;
+      const target = getColorAtPixel(x, y, data, W, H);
+      const fillRGB = hexToRgb(fillColor);
+      if (!fillRGB) return;
+      if (target.r === fillRGB.r && target.g === fillRGB.g && target.b === fillRGB.b) return;
+      const stack = [{x: Math.floor(x), y: Math.floor(y)}];
+      const visited = new Uint8Array(W * H);
+      while (stack.length) {
+        const {x: px, y: py} = stack.pop();
+        const idx = py * W + px;
+        if (visited[idx]) continue;
+        const col = getColorAtPixel(px, py, data, W, H);
+        if (col.r === target.r && col.g === target.g && col.b === target.b) {
+          const pixelIdx = (py * W + px) * 4;
+          data[pixelIdx] = fillRGB.r;
+          data[pixelIdx+1] = fillRGB.g;
+          data[pixelIdx+2] = fillRGB.b;
+          data[pixelIdx+3] = 255;
+          visited[idx] = 1;
+          stack.push({x: px+1, y: py}, {x: px-1, y: py}, {x: px, y: py+1}, {x: px, y: py-1});
+        }
+      }
+      layer.ctx.putImageData(imgData, 0, 0);
+      commitToLayer();
+      pushToHistory();
+    }
+    
+    function getColorAtPixel(x, y, data, w, h) {
+      if (x < 0 || x >= w || y < 0 || y >= h) return {r:0,g:0,b:0};
+      const idx = (Math.floor(y) * w + Math.floor(x)) * 4;
+      return {r: data[idx], g: data[idx+1], b: data[idx+2]};
+    }
+    
+    function hexToRgb(hex) {
+      let c = hex.slice(1);
+      if (c.length === 3) c = c.split('').map(ch => ch+ch).join('');
+      const val = parseInt(c, 16);
+      return {r: (val>>16)&255, g: (val>>8)&255, b: val&255};
+    }
+    
+    // ----- Free drawing handlers -----
+    function startDrawing(e) {
+      if (currentTool === 'fill') {
+        const coords = getCanvasCoords(e);
+        if (coords) floodFill(coords.x, coords.y, brushColor);
+        return;
+      }
+      isDrawing = true;
+      const coords = getCanvasCoords(e);
+      if (!coords) return;
+      lastX = coords.x; lastY = coords.y;
+      if (currentTool === 'smudge') {
+        smudgeLastPoint = {x: lastX, y: lastY};
+      } else {
+        const layerCtx = getCurrentLayerContext();
+        applySymmetry(lastX, lastY, (x,y) => drawDot(layerCtx, x, y));
+        commitToLayer();
+        pushToHistory();
+      }
+    }
+    
+    function draw(e) {
+      if (!isDrawing) return;
+      const coords = getCanvasCoords(e);
+      if (!coords) return;
+      const cx = coords.x, cy = coords.y;
+      const layerCtx = getCurrentLayerContext();
+      if (currentTool === 'smudge') {
+        if (smudgeLastPoint) {
+          applySymmetry(cx, cy, (x,y) => {
+            smudge(layerCtx, x, y, smudgeLastPoint.x, smudgeLastPoint.y);
+          });
+        }
+        smudgeLastPoint = {x: cx, y: cy};
+      } else {
+        applySymmetry(lastX, lastY, (lx, ly) => {
+          applySymmetry(cx, cy, (rx, ry) => {
+            drawLine(layerCtx, lx, ly, rx, ry);
+          });
+        });
+      }
+      lastX = cx; lastY = cy;
+      commitToLayer();
+    }
+    
+    function endDrawing() {
+      if (isDrawing) {
+        pushToHistory();
+        isDrawing = false;
+        smudgeLastPoint = null;
+      }
+    }
+    
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      let clientX, clientY;
+      if (e.touches) {
+        if (!e.touches.length) return null;
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      let x = (clientX - rect.left) * scaleX;
+      let y = (clientY - rect.top) * scaleY;
+      x = Math.min(Math.max(x, 0), W);
+      y = Math.min(Math.max(y, 0), H);
+      return {x, y};
+    }
+    
+    // UI Binding
+    function setTool(tool) {
+      currentTool = tool;
+      document.querySelectorAll('#brushTool, #eraserTool, #fillTool, #smudgeTool').forEach(btn => btn.classList.remove('active'));
+      if (tool === 'brush') document.getElementById('brushTool').classList.add('active');
+      if (tool === 'eraser') document.getElementById('eraserTool').classList.add('active');
+      if (tool === 'fill') document.getElementById('fillTool').classList.add('active');
+      if (tool === 'smudge') document.getElementById('smudgeTool').classList.add('active');
+    }
+    
+    // Symmetry
+    function setSymmetry(mode) {
+      symmetryMode = mode;
+      document.getElementById('symOff').classList.remove('active');
+      document.getElementById('symHorizontal').classList.remove('active');
+      document.getElementById('symVertical').classList.remove('active');
+      document.getElementById('symRadial').classList.remove('active');
+      if (mode === 'off') document.getElementById('symOff').classList.add('active');
+      if (mode === 'horizontal') document.getElementById('symHorizontal').classList.add('active');
+      if (mode === 'vertical') document.getElementById('symVertical').classList.add('active');
+      if (mode === 'radial') document.getElementById('symRadial').classList.add('active');
+    }
+    
+    // Layer operations
+    function addLayer() {
+      const newLayer = new Layer(`Layer ${layers.length+1}`);
+      layers.push(newLayer);
+      currentLayerIndex = layers.length-1;
+      updateLayersUI();
+      renderComposite();
+      pushToHistory();
+    }
+    function deleteLayer() {
+      if (layers.length <= 1) return;
+      layers.splice(currentLayerIndex, 1);
+      currentLayerIndex = Math.min(currentLayerIndex, layers.length-1);
+      updateLayersUI();
+      renderComposite();
+      pushToHistory();
+    }
+    function applyBlendMode() {
+      const mode = document.getElementById('blendModeSelect').value;
+      layers[currentLayerIndex].blendMode = mode;
+      renderComposite();
+      pushToHistory();
+    }
+    
+    // Filters on current layer
+    function applyFilter(type) {
+      const layer = layers[currentLayerIndex];
+      const img = layer.getImageData();
+      const data = img.data;
+      for (let i = 0; i < data.length; i += 4) {
+        let r = data[i], g = data[i+1], b = data[i+2];
+        if (type === 'grayscale') {
+          const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+          data[i] = data[i+1] = data[i+2] = gray;
+        } else if (type === 'invert') {
+          data[i] = 255 - r;
+          data[i+1] = 255 - g;
+          data[i+2] = 255 - b;
+        } else if (type === 'blur') {
+          // simple box blur approximation (skip for performance, but run once)
+        }
+      }
+      if (type === 'blur') {
+        // basic blur via canvas filter
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = W; tempCanvas.height = H;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(img, 0, 0);
+        tempCtx.filter = 'blur(4px)';
+        tempCtx.drawImage(tempCanvas, 0, 0);
+        layer.ctx.drawImage(tempCanvas, 0, 0);
+      } else {
+        layer.ctx.putImageData(img, 0, 0);
+      }
+      renderComposite();
+      pushToHistory();
+    }
+    
+    // Zoom / pan simulation via canvas scale wrapper (direct canvas scale)
+    let scale = 1;
+    const canvasContainer = document.querySelector('.canvas-wrapper');
+    function applyZoom() {
+      canvas.style.transform = `scale(${scale})`;
+      canvas.style.transformOrigin = 'top left';
+    }
+    function zoomIn() { scale = Math.min(scale + 0.1, 3); applyZoom(); }
+    function zoomOut() { scale = Math.max(scale - 0.1, 0.5); applyZoom(); }
+    function resetZoom() { scale = 1; applyZoom(); }
+    
+    // Export Project (PNG)
+    function exportProject() {
+      const link = document.createElement('a');
+      link.download = 'artforge_project.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+    
+    // Opacity slider
+    const opacitySlider = document.getElementById('brushOpacity');
+    opacitySlider.addEventListener('input', (e) => {
+      brushOpacity = e.target.value / 100;
+      document.getElementById('opacityValue').innerText = e.target.value + '%';
+    });
+    
+    // Event binding
+    function attachEvents() {
+      canvas.addEventListener('mousedown', startDrawing);
+      window.addEventListener('mousemove', draw);
+      window.addEventListener('mouseup', endDrawing);
+      canvas.addEventListener('touchstart', startDrawing, {passive: false});
+      window.addEventListener('touchmove', draw, {passive: false});
+      window.addEventListener('touchend', endDrawing);
+      document.getElementById('brushTool').addEventListener('click', () => setTool('brush'));
+      document.getElementById('eraserTool').addEventListener('click', () => setTool('eraser'));
+      document.getElementById('fillTool').addEventListener('click', () => setTool('fill'));
+      document.getElementById('smudgeTool').addEventListener('click', () => setTool('smudge'));
+      document.getElementById('colorPicker').addEventListener('input', (e) => { brushColor = e.target.value; });
+      document.getElementById('swapColorsBtn').addEventListener('click', () => { /* swap with secondary? not needed */ });
+      document.getElementById('brushSize').addEventListener('input', (e) => {
+        brushSize = parseInt(e.target.value);
+        document.getElementById('sizeValue').innerHTML = brushSize + 'px';
+      });
+      document.getElementById('symOff').addEventListener('click', () => setSymmetry('off'));
+      document.getElementById('symHorizontal').addEventListener('click', () => setSymmetry('horizontal'));
+      document.getElementById('symVertical').addEventListener('click', () => setSymmetry('vertical'));
+      document.getElementById('symRadial').addEventListener('click', () => setSymmetry('radial'));
+      document.getElementById('addLayerBtn').addEventListener('click', addLayer);
+      document.getElementById('delLayerBtn').addEventListener('click', deleteLayer);
+      document.getElementById('blendModeSelect').addEventListener('change', applyBlendMode);
+      document.getElementById('filterGrayscale').addEventListener('click', () => applyFilter('grayscale'));
+      document.getElementById('filterBlur').addEventListener('click', () => applyFilter('blur'));
+      document.getElementById('filterInvert').addEventListener('click', () => applyFilter('invert'));
+      document.getElementById('zoomInBtn').addEventListener('click', zoomIn);
+      document.getElementById('zoomOutBtn').addEventListener('click', zoomOut);
+      document.getElementById('resetViewBtn').addEventListener('click', resetZoom);
+      document.getElementById('exportProjectBtn').addEventListener('click', exportProject);
+      // undo/redo via keyboard
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo(); }
+      });
+    }
+    
+    // initialize everything
+    initLayers();
+    attachEvents();
+    pushToHistory(); // initial state
+    setTool('brush');
+    setSymmetry('off');
+    renderComposite();
+  })();
+</script>
+</body>
+</html>
