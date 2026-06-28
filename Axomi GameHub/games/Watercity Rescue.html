@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rescue At Sea: High Speed Edition</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@700&family=Inter:wght@900&display=swap");
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: white;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      outline: none;
+      z-index: 1;
+    }
+
+    .neo-glass {
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+    }
+
+    #ui-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      padding: 25px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .timer-box {
+      padding: 10px 25px;
+      font-family: 'Space Mono', monospace;
+      font-size: 2.8rem;
+      color: #ff2d55;
+      border-left: 5px solid #ff2d55;
+      background: rgba(0, 0, 0, 0.6);
+    }
+
+    .stats-container {
+      display: flex;
+      gap: 20px;
+    }
+
+    .stat-card {
+      padding: 12px 24px;
+      min-width: 140px;
+      border-top: 4px solid #00f2ff;
+    }
+
+    .stat-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #00f2ff;
+    }
+
+    .stat-val {
+      font-size: 2rem;
+      font-weight: 900;
+    }
+
+    #radar {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      width: 220px;
+      height: 220px;
+      border: 2px solid rgba(0, 242, 255, 0.5);
+      border-radius: 50%;
+      overflow: hidden;
+      pointer-events: auto;
+      background: radial-gradient(circle, rgba(0, 40, 40, 0.8) 0%, rgba(0, 10, 10, 0.9) 100%);
+    }
+
+    #radar-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .nitro-bar-container {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      width: 320px;
+      padding: 20px;
+    }
+
+    .nitro-bar-bg {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 2px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #nitro-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ff0055, #00f2ff);
+      transition: width 0.1s;
+    }
+
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+      text-align: center;
+    }
+
+    .btn {
+      padding: 18px 45px;
+      background: #00f2ff;
+      color: #000;
+      border: none;
+      font-size: 1.1rem;
+      font-weight: 900;
+      cursor: pointer;
+      margin-top: 35px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      transition: transform 0.2s;
+      pointer-events: auto;
+    }
+
+    .btn:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="ui-layer">
+    <div class="header">
+      <div class="stats-container">
+        <div class="stat-card neo-glass">
+          <div class="stat-label">RESCUED</div>
+          <div id="rescued-val" class="stat-val">0</div>
+        </div>
+        <div class="stat-card neo-glass">
+          <div class="stat-label">REMAINING</div>
+          <div id="remaining-val" class="stat-val">10</div>
+        </div>
+      </div>
+      <div class="timer-box neo-glass" id="timer">05:00</div>
+    </div>
+
+    <div id="radar" class="neo-glass">
+      <canvas id="radar-canvas"></canvas>
+    </div>
+
+    <div class="nitro-bar-container neo-glass">
+      <div class="stat-label">NITRO THRUST [SHIFT]</div>
+      <div class="nitro-bar-bg">
+        <div id="nitro-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay">
+    <h1 id="status-text" style="font-size: 6rem; margin-bottom: 10px; letter-spacing: -2px;">MISSION ENDED</h1>
+    <p id="sub-status" style="font-size: 1.5rem; opacity: 0.6; font-family: 'Space Mono';">Report summary incoming...</p>
+    <button class="btn" onclick="location.reload()">New Mission</button>
+  </div>
+
+  <script async src="https://ga.jspm.io/npm:es-module-shims@1.6.3/dist/es-module-shims.js" crossorigin="anonymous"></script>
+  <script type="importmap">
+    {
+            "imports": {      
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import {
+      Water
+    } from "three/addons/objects/Water.js";
+    import {
+      Sky
+    } from "three/addons/objects/Sky.js";
+    // CONFIG
+    const WORLD_SIZE = 450;
+    const NUM_SURVIVORS = 10;
+    const MISSION_TIME = 300;
+    const BASE_SPEED_MAX = 1.5;
+    const NITRO_SPEED_MAX = 3.5;
+    const TURN_SPEED = 0.05;
+    const RESCUE_DIST = 12;
+    // State
+    let scene, camera, renderer, water, boat, radarCtx;
+    let survivors = [],
+      obstacles = [],
+      particles = [];
+    let score = 0,
+      timeRemaining = MISSION_TIME,
+      nitro = 100;
+    let isNitroActive = false,
+      gameActive = true;
+    const keys = {};
+    window.onkeydown = (e) => {
+      keys[e.code] = true;
+    };
+    window.onkeyup = (e) => {
+      keys[e.code] = false;
+    };
+    init();
+
+    function init() {
+      scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x001e1a, 200, 1000);
+      camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 1, 3000);
+      camera.position.set(0, 50, 80);
+      renderer = new THREE.WebGLRenderer({
+        antialias: true
+      });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      document.body.appendChild(renderer.domElement);
+      radarCtx = document.getElementById('radar-canvas').getContext('2d');
+      document.getElementById('radar-canvas').width = 220;
+      document.getElementById('radar-canvas').height = 220;
+      setupEnvironment();
+      createCity();
+      createBoat();
+      spawnSurvivors();
+      setInterval(tickTimer, 1000);
+      window.addEventListener('resize', onWindowResize);
+      animate();
+    }
+
+    function setupEnvironment() {
+      const sun = new THREE.Vector3();
+      scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+      const mainLight = new THREE.DirectionalLight(0xffffff, 2.5);
+      mainLight.position.set(200, 400, 200);
+      scene.add(mainLight);
+      const waterGeo = new THREE.PlaneGeometry(20000, 20000);
+      water = new Water(waterGeo, {
+        textureWidth: 512,
+        textureHeight: 512,
+        waterNormals: new THREE.TextureLoader().load('https://threejs.org/examples/textures/waternormals.jpg', t => {
+          t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        }),
+        sunDirection: new THREE.Vector3(),
+        sunColor: 0xffffff,
+        waterColor: 0x002b26,
+        distortionScale: 4.5
+      });
+      water.rotation.x = -Math.PI / 2;
+      scene.add(water);
+      const sky = new Sky();
+      sky.scale.setScalar(10000);
+      scene.add(sky);
+      const skyU = sky.material.uniforms;
+      skyU['turbidity'].value = 5;
+      skyU['rayleigh'].value = 3;
+      sun.setFromSphericalCoords(1, THREE.MathUtils.degToRad(80), THREE.MathUtils.degToRad(180));
+      skyU['sunPosition'].value.copy(sun);
+      water.material.uniforms['sunDirection'].value.copy(sun).normalize();
+    }
+
+    function createBoat() {
+      boat = new THREE.Group();
+      // Sleek Powerboat Hull
+      const hullPoints = [];
+      hullPoints.push(new THREE.Vector2(0, 0));
+      hullPoints.push(new THREE.Vector2(2, 0.5));
+      hullPoints.push(new THREE.Vector2(1.5, 2));
+      hullPoints.push(new THREE.Vector2(0, 2));
+      const hullGeo = new THREE.LatheGeometry(hullPoints, 4, 0, Math.PI);
+      const hull = new THREE.Mesh(hullGeo, new THREE.MeshStandardMaterial({
+        color: 0x222222,
+        roughness: 0.1,
+        metalness: 0.8
+      }));
+      hull.rotation.x = Math.PI / 2;
+      hull.scale.set(1.2, 4.5, 1);
+      boat.add(hull);
+      // Stripes
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.3, 8.5), new THREE.MeshStandardMaterial({
+        color: 0x00f2ff
+      }));
+      stripe.position.y = 1.2;
+      boat.add(stripe);
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.8, 4), new THREE.MeshStandardMaterial({
+        color: 0xffffff
+      }));
+      cabin.position.set(0, 2, -0.5);
+      boat.add(cabin);
+      // Windows
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 1), new THREE.MeshBasicMaterial({
+        color: 0x001111
+      }));
+      win.position.set(0, 2.2, 1.51);
+      boat.add(win);
+      // Engines & Flames
+      const engGeo = new THREE.CylinderGeometry(0.5, 0.6, 2);
+      const engL = new THREE.Mesh(engGeo, new THREE.MeshStandardMaterial({
+        color: 0x111111
+      }));
+      engL.position.set(-1.2, 0.8, -4.5);
+      engL.rotation.x = Math.PI / 2;
+      const engR = engL.clone();
+      engR.position.x = 1.2;
+      boat.add(engL, engR);
+      const fireGeo = new THREE.ConeGeometry(0.5, 5, 8);
+      const fireMat = new THREE.MeshBasicMaterial({
+        color: 0x00f2ff,
+        transparent: true,
+        opacity: 0.8
+      });
+      const fL = new THREE.Mesh(fireGeo, fireMat);
+      fL.position.set(-1.2, 0.8, -7);
+      fL.rotation.x = -Math.PI / 2;
+      const fR = fL.clone();
+      fR.position.x = 1.2;
+      fL.visible = fR.visible = false;
+      boat.userData.flames = [fL, fR];
+      boat.add(fL, fR);
+      boat.userData.speed = 0;
+      boat.userData.targetRoll = 0;
+      boat.userData.currentRoll = 0;
+      scene.add(boat);
+    }
+
+    function createCity() {
+      const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
+      const buildingMat = new THREE.MeshStandardMaterial({
+        color: 0x1a1a1a,
+        roughness: 0.2
+      });
+      const instanced = new THREE.InstancedMesh(buildingGeo, buildingMat, 150);
+      const dummy = new THREE.Object3D();
+      for (let i = 0; i < 150; i++) {
+        const x = (Math.random() - 0.5) * WORLD_SIZE * 2;
+        const z = (Math.random() - 0.5) * WORLD_SIZE * 2;
+        if (Math.abs(x) < 50 && Math.abs(z) < 50) continue;
+        const w = 15 + Math.random() * 30;
+        const d = 15 + Math.random() * 30;
+        const h = 50 + Math.random() * 150;
+        dummy.position.set(x, h / 2 - 10, z);
+        dummy.scale.set(w, h, d);
+        dummy.updateMatrix();
+        instanced.setMatrixAt(i, dummy.matrix);
+        // Add "Neon Windows" light strips to some buildings
+        if (Math.random() > 0.7) {
+          const light = new THREE.Mesh(
+            new THREE.BoxGeometry(w + 0.5, 2, d + 0.5),
+            new THREE.MeshBasicMaterial({
+              color: Math.random() > 0.5 ? 0x00f2ff : 0xff0055
+            })
+          );
+          light.position.set(x, Math.random() * h - 10, z);
+          scene.add(light);
+        }
+        obstacles.push({
+          x,
+          z,
+          hw: w / 2 + 3,
+          hd: d / 2 + 3
+        });
+      }
+      scene.add(instanced);
+    }
+
+    function spawnSurvivors() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.font = '80px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🏊', 64, 64);
+      const tex = new THREE.CanvasTexture(canvas);
+      for (let i = 0; i < NUM_SURVIVORS; i++) {
+        const group = new THREE.Group();
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: tex
+        }));
+        sprite.scale.set(8, 8, 8);
+        group.add(sprite);
+        // Health ring
+        const ringGeo = new THREE.RingGeometry(5, 5.5, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: 0x00ffaa,
+          side: THREE.DoubleSide
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI / 2;
+        ring.position.y = -3.5;
+        group.add(ring);
+        const x = (Math.random() - 0.5) * WORLD_SIZE * 1.7;
+        const z = (Math.random() - 0.5) * WORLD_SIZE * 1.7;
+        group.position.set(x, 1.5, z);
+        group.userData = {
+          health: 100,
+          active: true,
+          id: i,
+          ring: ring
+        };
+        survivors.push(group);
+        scene.add(group);
+      }
+    }
+
+    function spawnWake() {
+      if (Math.abs(boat.userData.speed) < 0.2) return;
+      const p = new THREE.Mesh(
+        new THREE.SphereGeometry(0.3 + Math.random(), 8, 8),
+        new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.4
+        })
+      );
+      const offset = new THREE.Vector3((Math.random() - 0.5) * 3, 0.1, -4).applyQuaternion(boat.quaternion);
+      p.position.copy(boat.position).add(offset);
+      p.userData = {
+        age: 0,
+        life: 30 + Math.random() * 20,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 0.2, 0.05, (Math.random() - 0.5) * 0.2)
+      };
+      particles.push(p);
+      scene.add(p);
+    }
+
+    function checkCollisions(pos) {
+      for (let o of obstacles) {
+        if (pos.x > o.x - o.hw && pos.x < o.x + o.hw && pos.z > o.z - o.hd && pos.z < o.z + o.hd) return true;
+      }
+      return false;
+    }
+
+    function tickTimer() {
+      if (!gameActive) return;
+      timeRemaining--;
+      const mins = Math.floor(timeRemaining / 60).toString().padStart(2, '0');
+      const secs = (timeRemaining % 60).toString().padStart(2, '0');
+      document.getElementById('timer').innerText = `${mins}:${secs}`;
+      if (timeRemaining <= 0) endGame();
+    }
+
+    function updateHUD() {
+      document.getElementById('rescued-val').innerText = score;
+      const remaining = survivors.filter(s => s.userData.active).length;
+      document.getElementById('remaining-val').innerText = remaining;
+      document.getElementById('nitro-fill').style.width = `${nitro}%`;
+    }
+
+    function updateRadar() {
+      radarCtx.clearRect(0, 0, 220, 220);
+      const cx = 110,
+        cy = 110,
+        scale = 0.2;
+      radarCtx.fillStyle = 'rgba(255,255,255,0.05)';
+      obstacles.forEach(o => {
+        const rx = cx + (o.x - boat.position.x) * scale;
+        const ry = cy + (o.z - boat.position.z) * scale;
+        if (rx > -20 && rx < 240 && ry > -20 && ry < 240) radarCtx.fillRect(rx - o.hw * scale, ry - o.hd * scale, o.hw * 2 * scale, o.hd * 2 * scale);
+      });
+      survivors.forEach(s => {
+        if (!s.userData.active) return;
+        const rx = cx + (s.position.x - boat.position.x) * scale;
+        const ry = cy + (s.position.z - boat.position.z) * scale;
+        radarCtx.beginPath();
+        radarCtx.arc(rx, ry, 5, 0, Math.PI * 2);
+        radarCtx.fillStyle = '#00f2ff';
+        radarCtx.shadowBlur = 10;
+        radarCtx.shadowColor = '#00f2ff';
+        radarCtx.fill();
+      });
+      radarCtx.fillStyle = '#fff';
+      radarCtx.beginPath();
+      radarCtx.arc(cx, cy, 6, 0, Math.PI * 2);
+      radarCtx.fill();
+    }
+
+    function animate() {
+      if (!gameActive) return;
+      requestAnimationFrame(animate);
+      const time = performance.now() * 0.001;
+      water.material.uniforms['time'].value += 1.0 / 60.0;
+      // Logic
+      isNitroActive = (keys['ShiftLeft'] || keys['ShiftRight']) && boat.userData.speed > 0.2;
+      const maxS = isNitroActive && nitro > 0 ? NITRO_SPEED_MAX : BASE_SPEED_MAX;
+      if (isNitroActive && nitro > 0) {
+        boat.userData.speed = Math.min(boat.userData.speed + 0.12, NITRO_SPEED_MAX);
+        nitro = Math.max(0, nitro - 0.6);
+        boat.userData.flames.forEach(f => {
+          f.visible = true;
+          f.scale.y = 1.5 + Math.sin(time * 30) * 0.5;
+        });
+      } else {
+        boat.userData.speed = Math.max(boat.userData.speed * 0.98, 0);
+        nitro = Math.min(100, nitro + 0.2);
+        boat.userData.flames.forEach(f => f.visible = false);
+      }
+      if (keys['KeyW'] || keys['ArrowUp']) boat.userData.speed = Math.min(boat.userData.speed + 0.06, maxS);
+      if (keys['KeyS'] || keys['ArrowDown']) boat.userData.speed = Math.max(boat.userData.speed - 0.08, -0.6);
+      let rotationDelta = 0;
+      if (keys['KeyA'] || keys['ArrowLeft']) rotationDelta = TURN_SPEED;
+      if (keys['KeyD'] || keys['ArrowRight']) rotationDelta = -TURN_SPEED;
+      boat.rotation.y += rotationDelta;
+      // Realism: Leaning/Roll
+      boat.userData.targetRoll = rotationDelta * 8 * (boat.userData.speed / maxS);
+      boat.userData.currentRoll = THREE.MathUtils.lerp(boat.userData.currentRoll, boat.userData.targetRoll, 0.1);
+      boat.rotation.z = boat.userData.currentRoll;
+      // Realism: Pitching
+      const pitch = (boat.userData.speed / maxS) * 0.15 + Math.sin(time * 2) * 0.05;
+      boat.rotation.x = -pitch;
+      const nextPos = boat.position.clone().add(new THREE.Vector3(0, 0, 1).applyQuaternion(boat.quaternion).multiplyScalar(boat.userData.speed));
+      if (!checkCollisions(nextPos)) boat.position.copy(nextPos);
+      else boat.userData.speed *= -0.5;
+      boat.position.y = Math.sin(time * 2.2) * 0.2 + 0.2;
+      // Camera follow
+      const camTarget = boat.position.clone().add(new THREE.Vector3(0, 45, -80).applyQuaternion(boat.quaternion));
+      camera.position.lerp(camTarget, 0.08);
+      camera.lookAt(boat.position.clone().add(new THREE.Vector3(0, 10, 20).applyQuaternion(boat.quaternion)));
+      // Particles
+      spawnWake();
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.userData.age++;
+        p.position.add(p.userData.vel);
+        p.scale.multiplyScalar(0.96);
+        p.material.opacity *= 0.94;
+        if (p.userData.age > p.userData.life) {
+          scene.remove(p);
+          particles.splice(i, 1);
+        }
+      }
+      // Survivors
+      survivors.forEach(s => {
+        if (!s.userData.active) return;
+        s.userData.health -= 0.035;
+        s.position.y = 1.2 + Math.sin(time * 2.5 + s.userData.id) * 0.5;
+        s.userData.ring.material.color.setHSL(s.userData.health / 300, 1, 0.5);
+        s.userData.ring.scale.setScalar(1 + Math.sin(time * 4) * 0.1);
+        if (s.position.distanceTo(boat.position) < RESCUE_DIST) {
+          s.userData.active = false;
+          scene.remove(s);
+          score++;
+          updateHUD();
+          if (score >= NUM_SURVIVORS) endGame(true);
+        } else if (s.userData.health <= 0) {
+          s.userData.active = false;
+          scene.remove(s);
+          updateHUD();
+        }
+      });
+      updateRadar();
+      renderer.render(scene, camera);
+    }
+
+    function endGame(v = false) {
+      gameActive = false;
+      const overlay = document.getElementById('overlay');
+      overlay.style.display = 'flex';
+      document.getElementById('status-text').innerText = v ? "SUCCESS" : "FAILED";
+      document.getElementById('status-text').style.color = v ? "#00f2ff" : "#ff2d55";
+      document.getElementById('sub-status').innerText = v ? `10/10 Lives Secured. HQ is impressed.` : `Mission Critical Failure. Saved: ${score}/10`;
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  </script>
+  <script src="../game-helper.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Highway: Turbo Edition</title>
+    <style>
+        body {
+            overflow: hidden;
+            margin: 0;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .score-board {
+            color: #0ff;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #0ff;
+        }
+        
+        #turbo-indicator {
+            color: #ffaa00;
+            font-size: 20px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s;
+            text-shadow: 0 0 15px #ffaa00;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #0ff;
+            z-index: 30;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #333;
+            border-top: 5px solid #0ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Game Over Screen */
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none; /* Flex when active */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 20;
+            pointer-events: auto;
+        }
+
+        h1 { margin: 0 0 20px 0; font-size: 50px; color: #ff0055; text-shadow: 0 0 20px #ff0055; }
+        p { font-size: 20px; }
+        button {
+            margin-top: 30px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background: transparent;
+            color: #0ff;
+            border: 2px solid #0ff;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px #0ff;
+            transition: 0.2s;
+        }
+        button:hover { background: #0ff; color: #000; }
+
+        /* Upper Canvas (Glow) */
+        #upper {
+            z-index: 1;
+            filter: blur(4px) brightness(180%);
+            mix-blend-mode: screen;
+            opacity: 0.8;
+            /* Smooth transition for the glow effect */
+            transition: filter 0.2s ease-out, opacity 0.2s; 
+        }
+
+        /* Class applied when space is pressed */
+        #upper.turbo-active {
+            filter: blur(8px) brightness(350%) !important;
+            opacity: 1 !important;
+        }
+
+        canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <div>LOADING ASSETS...</div>
+    </div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div style="display:flex; justify-content:space-between; width:100%;">
+            <div class="score-board">SCORE: <span id="score">0</span></div>
+            <div id="turbo-indicator">!!! TURBO BOOST !!!</div>
+        </div>
+        <div style="color: #aaa; font-size: 14px;">ARROWS TO MOVE • SPACE FOR TURBO</div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen">
+        <h1>CRASHED!</h1>
+        <p>FINAL SCORE: <span id="final-score">0</span></p>
+        <button id="restart-btn">TRY AGAIN</button>
+    </div>
+
+    <!-- Dual Canvas Setup -->
+    <canvas id="upper"></canvas>
+    <canvas id="lower"></canvas>
+
+    <!-- Import Map -->
+    <script async src="https://ga.jspm.io/npm:es-module-shims@1.5.1/dist/es-module-shims.js" crossorigin="anonymous"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.177.0/examples/jsm/",
+          "meg/": "https://cdn.jsdelivr.net/npm/meshedgesgeometry@latest/src/"
+        }
+      }
+    </script>
+
+    <!-- Game Logic -->
+    <script type="module">
+        import * as THREE from "three";
+        import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+        import { MeshEdgesGeometry } from "meg/MeshEdgesGeometry.js";
+
+        // --- Configuration ---
+        const GAME_CONFIG = {
+            laneWidth: 3.5,
+            speedBase: 0.4,
+            speedMax: 1.0,
+            turboMultiplier: 2.5, // Speed when space is held
+            spawnRate: 80,
+            colors: {
+                player: 0x00ffff, // Cyan
+                enemyColors: [0xff00ff, 0xffa500] 
+            }
+        };
+
+        // --- Global Variables ---
+        let score = 0;
+        let gameSpeed = GAME_CONFIG.speedBase;
+        let isGameOver = false;
+        let frameCount = 0;
+        let assetsLoaded = false;
+        let isTurbo = false;
+        let carTemplates = []; 
+
+        // --- Setup Renderers ---
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('lower'), antialias: true });
+        renderer.setSize(innerWidth, innerHeight);
+
+        const blurderer = new THREE.WebGLRenderer({ canvas: document.getElementById('upper'), antialias: true });
+        blurderer.setSize(innerWidth, innerHeight);
+
+        // --- Scene & Camera ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050510);
+        scene.fog = new THREE.FogExp2(0x050510, 0.035);
+
+        const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight);
+        camera.position.set(0, 2.5, 8);
+        camera.lookAt(0, 0, -10);
+
+        // --- Input Handling ---
+        const keys = { ArrowLeft: false, ArrowRight: false, Space: false };
+        
+        window.addEventListener("keydown", (e) => {
+            if (e.code === 'ArrowLeft') keys.ArrowLeft = true;
+            if (e.code === 'ArrowRight') keys.ArrowRight = true;
+            if (e.code === 'Space') {
+                keys.Space = true;
+                isTurbo = true;
+                document.getElementById('turbo-indicator').style.opacity = 1;
+                document.getElementById('upper').classList.add('turbo-active');
+            }
+        });
+        
+        window.addEventListener("keyup", (e) => {
+            if (e.code === 'ArrowLeft') keys.ArrowLeft = false;
+            if (e.code === 'ArrowRight') keys.ArrowRight = false;
+            if (e.code === 'Space') {
+                keys.Space = false;
+                isTurbo = false;
+                document.getElementById('turbo-indicator').style.opacity = 0;
+                document.getElementById('upper').classList.remove('turbo-active');
+            }
+        });
+
+        window.addEventListener("resize", onWindowResize, false);
+
+        function onWindowResize() {
+            camera.aspect = innerWidth / innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(innerWidth, innerHeight);
+            blurderer.setSize(innerWidth, innerHeight);
+        }
+
+        // --- Asset Loading ---
+        function loadAssets() {
+            const loader = new GLTFLoader();
+            const models = ['tractor', 'ambulance', 'race'];
+            const colors = [0x00ffff, 0xff00ff, 0xffa500];
+            const path = 'https://boytchev.github.io/MeshEdgesGeometry/demos/models';
+
+            const loadPromises = models.map((modelName, index) => {
+                return new Promise((resolve) => {
+                    loader.load(`${path}/${modelName}.glb`, (gltf) => {
+                        const edges = new MeshEdgesGeometry(gltf.scene);
+                        edges.center();
+                        carTemplates.push({
+                            geo: edges,
+                            color: colors[index],
+                            name: modelName
+                        });
+                        resolve();
+                    });
+                });
+            });
+
+            Promise.all(loadPromises).then(() => {
+                assetsLoaded = true;
+                document.getElementById('loading-screen').style.display = 'none';
+                initGame();
+            });
+        }
+
+        // --- Game Objects ---
+
+        // 1. The Road
+        const gridHelper = new THREE.GridHelper(200, 100, 0xff00cc, 0xff00cc);
+        gridHelper.position.y = -0.5;
+        gridHelper.position.z = -50;
+        // Base scale
+        gridHelper.scale.set(1, 1, 2); 
+        scene.add(gridHelper);
+
+        const planeGeo = new THREE.PlaneGeometry(200, 200);
+        const planeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const floorPlane = new THREE.Mesh(planeGeo, planeMat);
+        floorPlane.rotation.x = -Math.PI / 2;
+        floorPlane.position.y = -0.6;
+        scene.add(floorPlane);
+
+        // 2. Player
+        let player;
+
+        // 3. Enemies Manager
+        let enemies = [];
+
+        // --- Helper: Instantiate Car ---
+        function createCar(template, x, y, z, isPlayer) {
+            const material = new THREE.LineBasicMaterial({ color: isPlayer ? GAME_CONFIG.colors.player : template.color });
+            const car = new THREE.LineSegments(template.geo, material);
+            car.position.set(x, y, z);
+            car.scale.set(1.2, 1.2, 1.2); 
+            scene.add(car);
+            return car;
+        }
+
+        function spawnEnemy() {
+            const template = carTemplates[Math.floor(Math.random() * carTemplates.length)];
+            const lane = (Math.random() * 2 - 1) * (GAME_CONFIG.laneWidth / 1.5);
+            // Spawn further away if turbo is on to give reaction time
+            const spawnZ = isTurbo ? -100 : -60;
+            
+            const enemy = createCar(template, lane, 0, spawnZ, false);
+            enemies.push(enemy);
+        }
+
+        // --- Game Logic ---
+
+        function initGame() {
+            player = createCar(carTemplates[0], 0, 0, 0, true);
+            resetGame();
+        }
+
+        function resetGame() {
+            isGameOver = false;
+            score = 0;
+            gameSpeed = GAME_CONFIG.speedBase;
+            frameCount = 0;
+            isTurbo = false;
+            
+            player.position.x = 0;
+            player.rotation.set(0, 0, 0);
+            player.visible = true;
+
+            enemies.forEach(e => scene.remove(e));
+            enemies = [];
+
+            document.getElementById('score').innerText = '0';
+            document.getElementById('game-over-screen').style.display = 'none';
+            
+            // Reset grid scale
+            gridHelper.scale.z = 2;
+        }
+
+        function checkCollision(p, e) {
+            const pBox = new THREE.Box3().setFromObject(p);
+            pBox.expandByScalar(-0.2); 
+            const eBox = new THREE.Box3().setFromObject(e);
+            eBox.expandByScalar(-0.2);
+            return pBox.intersectsBox(eBox);
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            document.getElementById('final-score').innerText = Math.floor(score);
+            document.getElementById('game-over-screen').style.display = 'flex';
+            player.rotation.z += Math.PI / 4; 
+            
+            // Remove turbo effect on death
+            isTurbo = false;
+            document.getElementById('upper').classList.remove('turbo-active');
+        }
+
+        // --- Main Animation Loop ---
+        
+        renderer.setAnimationLoop((t) => {
+            if (!assetsLoaded) {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            if (isGameOver) {
+                renderer.render(scene, camera);
+                blurderer.render(scene, camera);
+                return;
+            }
+
+            // --- Turbo Calculation ---
+            const currentMultiplier = isTurbo ? GAME_CONFIG.turboMultiplier : 1.0;
+            const currentSpeed = gameSpeed * currentMultiplier;
+
+            // --- 1. Player Movement ---
+            if (keys.ArrowLeft) {
+                player.position.x -= 0.15 * currentMultiplier; // Move faster in turbo
+                player.rotation.z = Math.min(player.rotation.z + 0.05, 0.15); 
+            } 
+            else if (keys.ArrowRight) {
+                player.position.x += 0.15 * currentMultiplier;
+                player.rotation.z = Math.max(player.rotation.z - 0.05, -0.15);
+            } 
+            else {
+                player.rotation.z *= 0.9;
+            }
+            player.position.x = Math.max(-6, Math.min(6, player.position.x));
+
+            // --- 2. Camera & Road Effects ---
+            // Grid Movement
+            gridHelper.position.z += currentSpeed;
+            if (gridHelper.position.z > 0) gridHelper.position.z = -50;
+
+            // Grid Stretching (Warp effect)
+            const targetGridScale = isTurbo ? 6 : 2;
+            gridHelper.scale.z = THREE.MathUtils.lerp(gridHelper.scale.z, targetGridScale, 0.1);
+
+            // Camera FOV (Speed effect)
+            const targetFOV = isTurbo ? 65 : 50;
+            camera.fov = THREE.MathUtils.lerp(camera.fov, targetFOV, 0.1);
+            camera.updateProjectionMatrix();
+
+            // Camera Shake (Turbo vibration)
+            if(isTurbo) {
+                camera.position.x = (Math.random() - 0.5) * 0.05;
+                camera.position.y = 2.5 + (Math.random() - 0.5) * 0.05;
+            } else {
+                camera.position.x = 0;
+                camera.position.y = 2.5;
+            }
+
+            // --- 3. Spawn Enemies ---
+            frameCount++;
+            const currentSpawnRate = Math.max(20, GAME_CONFIG.spawnRate - Math.floor(score / 500));
+            if (frameCount % currentSpawnRate === 0) {
+                spawnEnemy();
+            }
+
+            // --- 4. Update Enemies ---
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                e.position.z += currentSpeed;
+
+                if (checkCollision(player, e)) {
+                    gameOver();
+                }
+
+                if (e.position.z > 10) {
+                    scene.remove(e);
+                    enemies.splice(i, 1);
+                    score += (isTurbo ? 20 : 10); // Double points for Turbo!
+                    document.getElementById('score').innerText = score;
+                    
+                    if (gameSpeed < GAME_CONFIG.speedMax) gameSpeed += 0.001;
+                }
+            }
+
+            // --- 5. Render ---
+            renderer.render(scene, camera);
+            blurderer.render(scene, camera);
+        });
+
+        // --- Start Logic ---
+        document.getElementById('restart-btn').addEventListener('click', resetGame);
+        loadAssets();
+
+    </script>
+  <script src="../game-helper.js"></script>
+</body>
+</html>

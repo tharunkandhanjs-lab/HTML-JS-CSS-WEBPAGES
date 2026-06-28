@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Axomi — Play, learn, and create JavaScript mini-games directly in your browser."
+    />
+    <title>AXOMI</title>
+    <link
+      rel="icon"
+      type="image/jpg"
+      href="https://tse1.mm.bing.net/th/id/OIP.qw9D31NVR6okgQmhEXG-DQHaHa?cb=12&rs=1&pid=ImgDetMain&o=7&rm=3"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="backdrop" aria-hidden="true">
+      <span class="backdrop__orb backdrop__orb--one"></span>
+      <span class="backdrop__orb backdrop__orb--two"></span>
+      <span class="backdrop__orb backdrop__orb--three"></span>
+    </div>
+
+    <div class="container">
+      <header class="hero" id="top">
+        <nav class="hero__nav" aria-label="Main navigation">
+          <a class="logo" href="#top" aria-label="Axomi Home">
+            <span class="logo__icon" aria-hidden="true">🎮</span>
+            <span class="logo__text">Axomi</span>
+          </a>
+
+          <div class="hero__actions">
+            <button
+              id="themeToggle"
+              class="theme-toggle"
+              aria-label="Toggle theme"
+            >
+              🌙
+            </button>
+            <a
+              href="https://github.com/tharunkandhanjs-lab/HTML-JS-CSS-WEBPAGES"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="cta-button"
+              >Contribute</a
+            >
+            <a class="cta-button" href="#games">Browse Games</a>
+            <a class="cta-button" href="#settings">Settings</a>
+            <a class="cta-button" href="login.html">Login</a>
+          </div>
+        </nav>
+
+        <div class="hero__content">
+          <div class="hero__copy">
+            <p class="hero__eyebrow">Open-source arcade for the web</p>
+            <h1>Play. Learn. Ship your next mini-game.</h1>
+            <p class="hero__lead">
+              Explore hand-crafted JavaScript games, peek under the hood, and
+              add your own creations — all right in your browser.
+            </p>
+
+            <div class="hero__cta">
+              <a class="cta-button" href="#games">Browse Games</a>
+              <a
+                class="cta-button"
+                href="https://github.com/tharunkandhanjs-lab/HTML-JS-CSS-WEBPAGES"
+                target="_blank"
+                rel="noopener noreferrer"
+                >View on GitHub</a
+              >
+            </div>
+
+            <p class="hero__note">
+              Click "Play now" to open a game in this tab, or "Open in new tab
+              →" to keep this hub open.
+            </p>
+
+            <dl class="hero__stats">
+              <div>
+                <dt>Total Games</dt>
+                <dd><span data-games-count>0</span> and counting</dd>
+              </div>
+              <div>
+                <dt>Latest Launch</dt>
+                <dd><span data-latest-game>--</span></dd>
+              </div>
+              <div>
+                <dt>Win Points</dt>
+                <dd><span data-win-points>0</span> points</dd>
+              </div>
+              <div>
+                <dt>Stack</dt>
+                <dd>HTML • CSS • JS</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="hero__preview" aria-hidden="true">
+            <div class="preview-card">
+              <span class="preview-card__label">Live Leaderboard</span>
+              <div class="preview-card__stat">
+                <span class="preview-card__value" data-preview-count>00</span>
+                <span class="preview-card__hint">games ready to play</span>
+              </div>
+              <div class="preview-card__stack">
+                <span>⚡ Instant Load</span>
+                <span>📦 No Build Tools</span>
+                <span>🌐 Browser Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="hub" id="games">
+        <section
+          id="pro-badges"
+          class="pro-badges"
+          aria-label="Your Pro Player Badges"
+        >
+          <h2>Your Pro Player Badges ⭐</h2>
+          <div id="pro-badges-container" class="pro-badges-container">
+            <!-- JS will inject badges here -->
+          </div>
+        </section>
+
+        <section class="hub__controls" aria-label="Game filters">
+          <div class="search">
+            <label class="sr-only" for="game-search">Search games</label>
+            <input
+              id="game-search"
+              type="search"
+              name="search"
+              placeholder="Search games or tags"
+              autocomplete="off"
+              spellcheck="false"
+              class="search__input"
+            />
+            <span class="search__icon" aria-hidden="true">🔍</span>
+          </div>
+
+          <div class="hub__meta">
+            <span><strong data-games-count>0</strong> games</span>
+            <span>Latest: <strong data-latest-game>--</strong></span>
+          </div>
+        </section>
+
+        <section id="settings" class="settings-panel" aria-label="App settings">
+          <div class="settings-header">
+            <div>
+              <span class="settings-overline">Settings</span>
+              <h2>Manage your Axomi experience</h2>
+              <p class="settings-description">
+                Update account details, display preferences, notification behavior,
+                privacy permissions, and storage options.
+              </p>
+            </div>
+          </div>
+
+          <div class="settings-grid">
+            <article class="settings-card">
+              <div class="settings-card__head">
+                <h3>Account & Profile</h3>
+              </div>
+              <div class="settings-card__body">
+                <p class="settings-description">
+                  Sign in, manage your profile details, and enable basic security.
+                </p>
+
+                <div class="setting-row">
+                  <div>
+                    <strong>Account status</strong>
+                    <p id="account-status">Signed out</p>
+                  </div>
+                  <button
+                    id="sign-out-btn"
+                    type="button"
+                    class="ghost-button hidden"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+
+                <form id="sign-in-form" class="settings-form">
+                  <label>
+                    Email
+                    <input
+                      id="sign-email"
+                      type="email"
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <label>
+                    Username
+                    <input id="sign-username" type="text" placeholder="Gamer" />
+                  </label>
+                  <label>
+                    Phone
+                    <input id="sign-phone" type="tel" placeholder="+1234567890" />
+                  </label>
+                  <button id="sign-in-btn" type="submit" class="cta-button">
+                    Sign In
+                  </button>
+                </form>
+
+                <div class="settings-group">
+                  <label>
+                    New password
+                    <input
+                      id="password-input"
+                      type="password"
+                      placeholder="••••••••"
+                    />
+                  </label>
+                  <label class="checkbox-label">
+                    <input id="two-factor-toggle" type="checkbox" />
+                    Enable Two-Factor Authentication (2FA)
+                  </label>
+                  <button
+                    id="save-security-btn"
+                    type="button"
+                    class="cta-button"
+                  >
+                    Update Security
+                  </button>
+                </div>
+
+                <div class="settings-group">
+                  <label>
+                    Registered email
+                    <input
+                      id="personal-email"
+                      type="email"
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <label>
+                    Username
+                    <input
+                      id="personal-username"
+                      type="text"
+                      placeholder="Gamer"
+                    />
+                  </label>
+                  <label>
+                    Phone
+                    <input
+                      id="personal-phone"
+                      type="tel"
+                      placeholder="+1234567890"
+                    />
+                  </label>
+                  <button
+                    id="save-profile-btn"
+                    type="button"
+                    class="cta-button"
+                  >
+                    Save Profile
+                  </button>
+                </div>
+              </div>
+            </article>
+
+            <article class="settings-card">
+              <div class="settings-card__head">
+                <h3>General / Display</h3>
+              </div>
+              <div class="settings-card__body">
+                <p class="settings-description">
+                  Adjust theme, language, and text scaling for the app interface.
+                </p>
+                <label>
+                  Theme
+                  <select id="theme-select">
+                    <option value="dark">Dark Mode</option>
+                    <option value="light">Light Mode</option>
+                  </select>
+                </label>
+                <label>
+                  Language
+                  <select id="language-select">
+                    <option value="English">English</option>
+                    <option value="Spanish">Spanish</option>
+                    <option value="French">French</option>
+                  </select>
+                </label>
+                <label>
+                  Text size
+                  <select id="text-size-select">
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                </label>
+              </div>
+            </article>
+
+            <article class="settings-card">
+              <div class="settings-card__head">
+                <h3>Notifications</h3>
+              </div>
+              <div class="settings-card__body">
+                <p class="settings-description">
+                  Choose how alerts reach you and when they should be quiet.
+                </p>
+
+                <label class="checkbox-label">
+                  <input id="push-toggle" type="checkbox" />
+                  Push notifications
+                </label>
+                <label class="checkbox-label">
+                  <input id="email-toggle" type="checkbox" />
+                  Email alerts
+                </label>
+                <label class="checkbox-label">
+                  <input id="badge-toggle" type="checkbox" />
+                  In-app badges
+                </label>
+                <label class="checkbox-label">
+                  <input id="dnd-toggle" type="checkbox" />
+                  Do Not Disturb / Quiet hours
+                </label>
+
+                <div class="settings-row settings-time-row">
+                  <label>
+                    From
+                    <input id="quiet-start" type="time" />
+                  </label>
+                  <label>
+                    To
+                    <input id="quiet-end" type="time" />
+                  </label>
+                </div>
+
+                <label>
+                  Sound
+                  <select id="sound-select">
+                    <option value="default">Default</option>
+                    <option value="soft">Soft</option>
+                    <option value="muted">Muted</option>
+                  </select>
+                </label>
+                <label class="checkbox-label">
+                  <input id="vibration-toggle" type="checkbox" />
+                  Vibration
+                </label>
+              </div>
+            </article>
+
+            <article class="settings-card">
+              <div class="settings-card__head">
+                <h3>History</h3>
+              </div>
+              <div class="settings-card__body">
+                <p class="settings-description">
+                  Review your recent game plays and wins inside Axomi.
+                </p>
+                <div id="history-summary" class="history-summary"></div>
+                <ul id="history-list" class="history-list"></ul>
+                <button id="clear-history-btn" type="button" class="ghost-button">
+                  Clear history
+                </button>
+              </div>
+            </article>
+
+            <article class="settings-card">
+              <div class="settings-card__head">
+                <h3>Privacy & Permissions</h3>
+              </div>
+              <div class="settings-card__body">
+                <p class="settings-description">
+                  Choose what app data to share and what device access is allowed.
+                </p>
+
+                <label class="checkbox-label">
+                  <input id="data-sharing-toggle" type="checkbox" />
+                  Data sharing
+                </label>
+                <label class="checkbox-label">
+                  <input id="camera-toggle" type="checkbox" />
+                  Camera access
+                </label>
+                <label class="checkbox-label">
+                  <input id="microphone-toggle" type="checkbox" />
+                  Microphone access
+                </label>
+                <label class="checkbox-label">
+                  <input id="contacts-toggle" type="checkbox" />
+                  Contacts access
+                </label>
+                <label class="checkbox-label">
+                  <input id="location-toggle" type="checkbox" />
+                  Location access
+                </label>
+              </div>
+            </article>
+
+            <article class="settings-card">
+              <div class="settings-card__head">
+                <h3>Storage & Data</h3>
+              </div>
+              <div class="settings-card__body">
+                <p class="settings-description">
+                  Clear cache, control download quality, and restrict auto-downloads.
+                </p>
+
+                <button
+                  id="clear-cache-btn"
+                  type="button"
+                  class="ghost-button"
+                >
+                  Clear cache
+                </button>
+                <label>
+                  Download quality
+                  <select id="download-quality-select">
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </label>
+                <label>
+                  Auto-downloads
+                  <select id="auto-downloads-select">
+                    <option value="wifi">Wi-Fi only</option>
+                    <option value="always">Always</option>
+                    <option value="never">Never</option>
+                  </select>
+                </label>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="games-container" class="game-grid" aria-live="polite">
+          <!-- Game cards injected by JS -->
+        </section>
+        <section id="see-more-container" class="see-more-container" aria-live="polite">
+          </section>
+      </main>
+
+      <footer class="site-footer">
+        <p>
+          Made with ❤️ by the GOAT —
+          <a
+            href="https://chat.whatsapp.com/DEV5wihnxYmEBuOWuUnfq5"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Join our WhatsApp group</a
+          >
+        </p>
+      </footer>
+    </div>
+
+    <!-- Scroll Buttons -->
+    <button id="scroll-top" class="scroll-btn" aria-label="Scroll to top">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M6 15l6-6 6 6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+
+    <button id="scroll-bottom" class="scroll-btn" aria-label="Scroll to bottom">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M18 9l-6 6-6-6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+
+    <script src="script.js"></script>
+  </body>
+</html>

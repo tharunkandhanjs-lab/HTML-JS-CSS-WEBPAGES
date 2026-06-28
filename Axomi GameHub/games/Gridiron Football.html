@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gridiron Elite: Ultimate</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; font-family: system-ui, -apple-system, sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        .glitch-hover:hover {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: #facc15;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(34, 211, 238, 0.8); }
+        }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+        
+        .text-stroke {
+            -webkit-text-stroke: 2px white;
+            color: transparent;
+        }
+
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="text-white select-none">
+
+    <!-- GAME CONTAINER -->
+    <div id="game-container" class="absolute inset-0 z-0"></div>
+
+    <!-- UI LAYER -->
+    <div class="relative z-10 w-full h-screen pointer-events-none flex flex-col justify-between">
+        
+        <!-- HUD -->
+        <div id="hud" class="hidden w-full">
+            <div class="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-6">
+                <div class="bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] px-10 py-4 border-b-4 border-yellow-400 text-center">
+                    <p class="text-[10px] uppercase tracking-widest font-black opacity-60">Player</p>
+                    <h2 id="score-player" class="text-5xl font-black italic tracking-tighter">0</h2>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] px-6 py-2 border-2 border-white/10 text-center">
+                    <svg class="w-4 h-4 mx-auto mb-1 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <p class="text-[8px] uppercase font-black">Difficulty</p>
+                    <p id="difficulty-display" class="text-sm font-black">LVL 1</p>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] px-10 py-4 border-b-4 border-red-600 text-center">
+                    <p class="text-[10px] uppercase tracking-widest font-black opacity-60">CPU</p>
+                    <h2 id="score-ai" class="text-5xl font-black italic tracking-tighter">0</h2>
+                </div>
+            </div>
+
+            <div id="powerup-indicator" class="hidden absolute top-6 right-6 animate-pulse-glow">
+                <div class="flex items-center gap-3 bg-yellow-400 text-black px-4 py-2 border-2 border-white shadow-lg skew-x-[-10deg]">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <span class="font-black text-lg italic">2X SPEED ACTIVE</span>
+                </div>
+            </div>
+
+            <div class="absolute bottom-12 left-1/2 -translate-x-1/2 w-full max-w-lg px-6">
+                <div class="bg-white/10 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] p-6 border-l-8 border-cyan-400 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs uppercase font-bold text-cyan-400 mb-1">Status Feed</p>
+                        <h3 id="game-message" class="text-2xl font-black italic uppercase tracking-tighter">READY TO PLAY</h3>
+                    </div>
+                    <svg class="w-8 h-8 text-yellow-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN MENU -->
+        <div id="main-menu" class="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto transition-opacity duration-500">
+            <div class="text-center p-12 max-w-2xl border border-white/10 bg-black/40 shadow-2xl">
+                <div class="inline-block bg-cyan-400 text-black px-3 py-1 text-xs font-black uppercase mb-4 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]">
+                    Official Street League
+                </div>
+                <h1 class="text-9xl font-black italic uppercase leading-none mb-6 tracking-tighter glitch-hover cursor-default">
+                    GRIDIRON<br/>
+                    <span class="text-stroke">ELITE</span>
+                </h1>
+                <p class="text-zinc-300 mb-10 text-lg font-medium">
+                    DOMINATE THE FIELD. <span class="text-yellow-400">STRIP THE BALL.</span><br>
+                    TYPE <span class="bg-white/20 px-2 py-1 rounded font-bold text-yellow-300">"NFL"</span> FOR STADIUM MODE.
+                </p>
+                <button id="start-btn" class="bg-yellow-400 border-4 border-black font-black uppercase px-12 py-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all active:scale-95 flex items-center gap-4 mx-auto text-xl">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> ENTER THE CAGE
+                </button>
+            </div>
+        </div>
+
+        <!-- GAME OVER -->
+        <div id="game-over" class="hidden absolute inset-0 z-30 flex items-center justify-center bg-black/95 pointer-events-auto">
+            <div class="text-center">
+                <svg class="w-32 h-32 mx-auto mb-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
+                <h2 id="winner-text" class="text-7xl font-black italic uppercase mb-4">
+                    UNDISPUTED CHAMP
+                </h2>
+                <div class="flex justify-center gap-8 mb-10">
+                   <div class="text-center">
+                      <p class="text-xs uppercase opacity-50">Difficulty Reached</p>
+                      <p id="final-difficulty" class="text-3xl font-black">LVL 1</p>
+                   </div>
+                   <div class="text-center">
+                      <p class="text-xs uppercase opacity-50">Final Score</p>
+                      <p id="final-score" class="text-3xl font-black">0 - 0</p>
+                   </div>
+                </div>
+                <button id="restart-btn" class="bg-yellow-400 border-4 border-black font-black uppercase px-8 py-3 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all active:scale-95 flex items-center gap-3 mx-auto">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> RESTART SEASON
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- GAME LOGIC -->
+    <script>
+        // --- CONSTANTS ---
+        const POWERUP_DURATION = 5000;
+        const STUN_DURATION = 1.0;
+        const TACKLE_COOLDOWN = 1.5;
+        const CHEAT_CODE = "nfl";
+        
+        // --- STATE ---
+        const state = {
+            screen: 'menu',
+            score: { player: 0, ai: 0 },
+            difficulty: 1,
+            message: "READY TO PLAY",
+            keys: {},
+            hasBall: 'player',
+            clock: new THREE.Clock(),
+            cheatActive: false,
+            lastTurnoverTime: -10,
+            playerStats: { speedMult: 1, stunnedUntil: 0, powerUpEndTime: 0 },
+            aiStats: { speedMult: 1, stunnedUntil: 0, powerUpEndTime: 0 },
+            powerUp: { mesh: null, active: false, respawnTime: 0 }
+        };
+
+        // --- AUDIO SYSTEM ---
+        const AudioSys = {
+            ctx: null,
+            crowdNode: null,
+            crowdGain: null,
+
+            init: function() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+
+            startCrowdNoise: function() {
+                if (!this.ctx) this.init();
+                if (this.crowdNode) return;
+
+                const bufferSize = 2 * this.ctx.sampleRate;
+                const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                var lastOut = 0;
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    output[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = output[i];
+                    output[i] *= 3.5; 
+                }
+
+                this.crowdNode = this.ctx.createBufferSource();
+                this.crowdNode.buffer = noiseBuffer;
+                this.crowdNode.loop = true;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400; // Muffled crowd sound
+
+                this.crowdGain = this.ctx.createGain();
+                this.crowdGain.gain.value = 0.15; 
+
+                this.crowdNode.connect(filter);
+                filter.connect(this.crowdGain);
+                this.crowdGain.connect(this.ctx.destination);
+                this.crowdNode.start(0);
+            },
+
+            stopCrowdNoise: function() {
+                if (this.crowdGain) {
+                    this.crowdGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+                    setTimeout(() => {
+                        if(this.crowdNode) { this.crowdNode.stop(); this.crowdNode = null; }
+                    }, 500);
+                }
+            },
+
+            playTackle: function() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            },
+
+            playWhistle: function() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(2500, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(2500, this.ctx.currentTime + 0.1);
+                osc.frequency.linearRampToValueAtTime(2000, this.ctx.currentTime + 0.5);
+
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+            },
+
+            playTouchdownSound: function() {
+                if (this.crowdGain) {
+                    const now = this.ctx.currentTime;
+                    this.crowdGain.gain.cancelScheduledValues(now);
+                    this.crowdGain.gain.setValueAtTime(0.15, now);
+                    this.crowdGain.gain.linearRampToValueAtTime(0.5, now + 0.5); // Cheer gets louder
+                    this.crowdGain.gain.linearRampToValueAtTime(0.15, now + 3.0);
+                }
+                this.playWhistle();
+            }
+        };
+
+        const els = {
+            hud: document.getElementById('hud'),
+            menu: document.getElementById('main-menu'),
+            gameOver: document.getElementById('game-over'),
+            scorePlayer: document.getElementById('score-player'),
+            scoreAi: document.getElementById('score-ai'),
+            difficulty: document.getElementById('difficulty-display'),
+            message: document.getElementById('game-message'),
+            winnerText: document.getElementById('winner-text'),
+            finalDiff: document.getElementById('final-difficulty'),
+            finalScore: document.getElementById('final-score'),
+            container: document.getElementById('game-container'),
+            startBtn: document.getElementById('start-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            powerupIndicator: document.getElementById('powerup-indicator')
+        };
+
+        let scene, camera, renderer;
+        let playerParts, aiParts, aiMaterial; 
+        let player, ai, ball;
+        let frameId;
+        let demoModeAngle = 0; 
+        let crowdFans = []; // Store fan objects for animation
+
+        let stadiumObjects = {
+            walls: [],
+            field: null,
+            bleachers: null,
+            yardMarkers: [],
+            endzoneText: []
+        };
+
+        let cheatCodeTyped = "";
+
+        // --- INIT GAME ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+            scene.fog = new THREE.FogExp2(0x050505, 0.025);
+
+            camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            els.container.innerHTML = ''; 
+            els.container.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambient);
+
+            const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+            mainLight.position.set(20, 40, 10);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            scene.add(mainLight);
+
+            createStadium();
+            
+            playerParts = createCharacter(0xffff00);
+            aiParts = createCharacter(0xff0044); 
+            
+            player = playerParts.root;
+            ai = aiParts.root;
+
+            player.position.set(0, 0, 35);
+            ai.position.set(0, 0, -35);
+
+            createBall();
+
+            setTimeout(spawnPowerUp, 2000);
+
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('keyup', (e) => state.keys[e.code] = false);
+
+            animate();
+        }
+
+        // --- CHEAT CODE LOGIC ---
+        function onKeyDown(e) {
+            state.keys[e.code] = true;
+
+            if (e.key.length === 1) {
+                cheatCodeTyped += e.key.toLowerCase();
+                if (cheatCodeTyped.length > 20) {
+                    cheatCodeTyped = cheatCodeTyped.slice(-20);
+                }
+                
+                if (cheatCodeTyped.includes(CHEAT_CODE)) {
+                    activateCheatMode();
+                    cheatCodeTyped = "";
+                }
+            }
+        }
+
+        function activateCheatMode() {
+            if (state.cheatActive) return; 
+            state.cheatActive = true;
+
+            // Change CPU Color
+            aiMaterial.color.setHex(0x22c55e); // CPU Green
+            
+            // Hide Walls
+            stadiumObjects.walls.forEach(wall => {
+                wall.visible = false;
+            });
+
+            // Turn into Stadium
+            transformToStadium();
+
+            // Improve Field
+            if (stadiumObjects.field) {
+                stadiumObjects.field.material.color.setHex(0x2e8b57);
+                stadiumObjects.field.material.roughness = 0.6;
+                stadiumObjects.field.material.emissive = new THREE.Color(0x001100);
+            }
+
+            addFieldNumbers();
+            addTouchdownText();
+
+            state.message = "STADIUM MODE UNLOCKED!";
+            updateUI();
+        }
+
+        function createStadium() {
+            // Field
+            const fieldGeo = new THREE.PlaneGeometry(40, 80);
+            const fieldMat = new THREE.MeshStandardMaterial({ color: 0x1a4a1a, roughness: 0.9, metalness: 0.1 });
+            const field = new THREE.Mesh(fieldGeo, fieldMat);
+            field.rotation.x = -Math.PI / 2;
+            field.receiveShadow = true;
+            scene.add(field);
+            stadiumObjects.field = field;
+
+            // Lines
+            const addLine = (z, width = 0.4, color = 0xffffff) => {
+                const g = new THREE.PlaneGeometry(36, width);
+                const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color }));
+                m.rotation.x = -Math.PI / 2;
+                m.position.set(0, 0.02, z);
+                scene.add(m);
+            };
+            for (let i = -35; i <= 35; i += 5) {
+                addLine(i, i % 10 === 0 ? 0.6 : 0.2);
+            }
+
+            // Endzones
+            const createEndzone = (z, color) => {
+                const g = new THREE.PlaneGeometry(40, 10);
+                const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color }));
+                m.rotation.x = -Math.PI / 2;
+                m.position.set(0, 0.03, z);
+                scene.add(m);
+            };
+            createEndzone(35, 0x1e3a8a); 
+            createEndzone(-35, 0x991b1b); 
+
+            // Walls
+            const wallGeo = new THREE.BoxGeometry(1, 15, 80);
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            const wallL = new THREE.Mesh(wallGeo, wallMat);
+            wallL.position.set(-20.5, 7.5, 0);
+            scene.add(wallL);
+            stadiumObjects.walls.push(wallL);
+
+            const wallR = wallL.clone();
+            wallR.position.set(20.5, 7.5, 0);
+            scene.add(wallR);
+            stadiumObjects.walls.push(wallR);
+        }
+
+        // --- FAN SYSTEM ---
+        function createFan() {
+            const group = new THREE.Group();
+            
+            // Random bright color for jersey
+            const color = new THREE.Color().setHSL(Math.random(), 0.8, 0.5);
+            const mat = new THREE.MeshStandardMaterial({ color: color });
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c });
+
+            // Torso
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.5), mat);
+            torso.position.y = 1.0;
+            group.add(torso);
+
+            // Head
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), skinMat);
+            head.position.y = 1.8;
+            group.add(head);
+
+            // Waving Arm (Right Arm)
+            const armPivot = new THREE.Group();
+            armPivot.position.set(0.4, 1.4, 0);
+            
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 0.2), skinMat);
+            arm.position.y = 0.3; 
+            armPivot.add(arm);
+            group.add(armPivot);
+
+            // Performance: No shadows for fans
+            group.traverse(o => { if(o.isMesh) { o.castShadow = false; o.receiveShadow = false; }});
+
+            return { root: group, armPivot: armPivot, speed: 5 + Math.random() * 3, offset: Math.random() * 10 };
+        }
+
+        function addFansToBleachers() {
+            // Clear any existing
+            crowdFans.forEach(f => scene.remove(f.root));
+            crowdFans = [];
+
+            const steps = 6; 
+
+            for(let i=0; i<steps; i++) {
+                // Number of fans per row
+                const count = 25 + i * 5; 
+
+                for(let j=0; j<count; j++) {
+                    const fanData = createFan();
+                    const fan = fanData.root;
+
+                    // Position Logic
+                    // Z Spread: -38 to 38 (cover whole length including endzones)
+                    const zPos = (Math.random() - 0.5) * 76;
+                    
+                    // Y Position: Step height
+                    const stepHeight = 1.5;
+                    const yPos = (i * stepHeight) + 1.0; 
+                    
+                    // Side: Left or Right
+                    const isLeft = Math.random() > 0.5;
+                    
+                    // X Position: Offset from field
+                    // FIX: Determine base X correctly for Left vs Right
+                    const baseOffset = isLeft ? -22 : 22;
+                    const sign = isLeft ? -1 : 1; // Direction away from center
+                    
+                    const xOffset = (i * 3) * sign; 
+                    const spread = (Math.random() * 3) * sign;
+
+                    fan.position.set(baseOffset + xOffset + spread, yPos, zPos);
+                    
+                    // Face field (0, yPos, 0)
+                    fan.lookAt(0, yPos, 0);
+
+                    scene.add(fan);
+                    crowdFans.push(fanData);
+                }
+            }
+        }
+
+        function transformToStadium() {
+            if (state.cheatActive && stadiumObjects.bleachers) return; // Already done
+
+            const bleacherGroup = new THREE.Group();
+            const concreteMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.8 });
+
+            const steps = 6;
+            const width = 82; // slightly wider than field
+            const stepHeight = 1.5;
+            const stepDepth = 2;
+
+            // Left Side Bleachers
+            for(let i=0; i<steps; i++) {
+                // Calculate X position: Field is -20 to 20.
+                // First step at -22, moves out to -37
+                const xPos = -22 - (i * 3);
+                const w = 40 + (i * 3); 
+                const geo = new THREE.BoxGeometry(3, stepHeight, width);
+                const step = new THREE.Mesh(geo, concreteMat);
+                step.position.set(xPos, (i * stepHeight), 0); // Start y at 0
+                step.receiveShadow = true;
+                bleacherGroup.add(step);
+            }
+
+            // Right Side Bleachers
+            for(let i=0; i<steps; i++) {
+                const xPos = 22 + (i * 3);
+                const w = 40 + (i * 3);
+                const geo = new THREE.BoxGeometry(3, stepHeight, width);
+                const step = new THREE.Mesh(geo, concreteMat);
+                step.position.set(xPos, (i * stepHeight), 0);
+                step.receiveShadow = true;
+                bleacherGroup.add(step);
+            }
+
+            scene.add(bleacherGroup);
+            stadiumObjects.bleachers = bleacherGroup;
+
+            // Lights
+            const lightGeo = new THREE.CylinderGeometry(0.5, 0.5, 20);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0xdddddd });
+            const pole1 = new THREE.Mesh(lightGeo, lightMat);
+            pole1.position.set(-38, 10, 0);
+            scene.add(pole1);
+            stadiumObjects.bleachers.add(pole1);
+
+            const pole2 = pole1.clone();
+            pole2.position.set(38, 10, 0);
+            scene.add(pole2);
+            stadiumObjects.bleachers.add(pole2);
+
+            // Add Fans
+            addFansToBleachers();
+        }
+
+        function createTextSprite(message, size, color) {
+            const fontface = "Arial";
+            const fontsize = 64;
+            const borderThickness = 4;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const context = canvas.getContext('2d');
+            
+            context.font = "Bold " + fontsize + "px " + fontface;
+            const metrics = context.measureText(message);
+            const textWidth = metrics.width;
+            
+            context.strokeStyle = "rgba(0,0,0,1.0)";
+            context.lineWidth = borderThickness;
+            context.fillStyle = color;
+            
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            
+            context.strokeText(message, canvas.width/2, canvas.height/2);
+            context.fillText(message, canvas.width/2, canvas.height/2);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            
+            const scaleFactor = size / textWidth * canvas.width; 
+            sprite.scale.set(scaleFactor, scaleFactor / 4, 1.0);
+            
+            return sprite;
+        }
+
+        function addTouchdownText() {
+            const textTop = createTextSprite("TOUCHDOWN", 8, "#ffffff");
+            textTop.position.set(0, 1, 38);
+            scene.add(textTop);
+            stadiumObjects.endzoneText.push(textTop);
+
+            const textBot = createTextSprite("TOUCHDOWN", 8, "#ffffff");
+            textBot.position.set(0, 1, -38);
+            scene.add(textBot);
+            stadiumObjects.endzoneText.push(textBot);
+        }
+
+        function addFieldNumbers() {
+            const addNumber = (num, z) => {
+                const mesh = createTextSprite(num.toString(), 4, "#ffffff");
+                mesh.position.set(4, 0.2, z);
+                scene.add(mesh);
+                stadiumObjects.yardMarkers.push(mesh);
+
+                const meshLeft = mesh.clone();
+                meshLeft.position.set(-4, 0.2, z);
+                meshLeft.material = mesh.material.clone();
+                scene.add(meshLeft);
+                stadiumObjects.yardMarkers.push(meshLeft);
+            };
+            addNumber(30, 20);
+            addNumber(20, 10);
+            addNumber(10, 0);
+            addNumber(20, -10);
+            addNumber(30, -20);
+        }
+
+        function createCharacter(teamColor) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: teamColor });
+            if (teamColor === 0xff0044) aiMaterial = mat;
+
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xd2b48c });
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(1, 1.2, 0.6), mat);
+            torso.position.y = 1.4;
+            torso.castShadow = true;
+            group.add(torso);
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+            head.position.y = 2.2;
+            group.add(head);
+
+            const createLimb = (x, y) => {
+                const limb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), skinMat);
+                const pivot = new THREE.Group();
+                pivot.position.set(x, y, 0);
+                pivot.add(limb);
+                limb.position.y = -0.4;
+                group.add(pivot);
+                return pivot;
+            };
+
+            const parts = {
+                armL: createLimb(0.65, 1.8),
+                armR: createLimb(-0.65, 1.8),
+                legL: createLimb(0.3, 0.8),
+                legR: createLimb(-0.3, 0.8),
+                root: group
+            };
+
+            scene.add(group);
+            return parts;
+        }
+
+        function createBall() {
+            const ballGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            ballGeo.scale(0.8, 1.2, 0.8);
+            ball = new THREE.Mesh(ballGeo, new THREE.MeshStandardMaterial({ color: 0x5d2e1f }));
+            ball.castShadow = true;
+            scene.add(ball);
+        }
+
+        function spawnPowerUp() {
+            if (state.powerUp.mesh) {
+                scene.remove(state.powerUp.mesh);
+                state.powerUp.mesh = null;
+            }
+
+            const geo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: 0xffea00, 
+                emissive: 0xffea00, 
+                emissiveIntensity: 0.8,
+                wireframe: true 
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            const x = (Math.random() * 30) - 15;
+            const z = (Math.random() * 50) - 25;
+            mesh.position.set(x, 2, z);
+
+            scene.add(mesh);
+            state.powerUp.mesh = mesh;
+            state.powerUp.active = true;
+            state.powerUp.respawnTime = 0; 
+        }
+
+        function updatePowerUps(time) {
+            if (!state.powerUp.active && time > state.powerUp.respawnTime) {
+                if (Math.random() < 0.005) {
+                    spawnPowerUp();
+                }
+            }
+
+            if (state.powerUp.active && state.powerUp.mesh) {
+                state.powerUp.mesh.rotation.y += 0.05;
+                state.powerUp.mesh.rotation.z += 0.02;
+                state.powerUp.mesh.position.y = 2 + Math.sin(time * 3) * 0.5;
+
+                if (player.position.distanceTo(state.powerUp.mesh.position) < 2) {
+                    activatePowerUp('player');
+                }
+                else if (ai.position.distanceTo(state.powerUp.mesh.position) < 2) {
+                    activatePowerUp('ai');
+                }
+            }
+
+            checkPowerUpExpiration('player', state.playerStats, time);
+            checkPowerUpExpiration('ai', state.aiStats, time);
+        }
+
+        function activatePowerUp(who) {
+            if (state.screen !== 'menu') {
+                state.message = `${who.toUpperCase()} GOT SPEED BOOST!`;
+                updateUI();
+            }
+            
+            scene.remove(state.powerUp.mesh);
+            state.powerUp.active = false;
+            state.powerUp.mesh = null;
+            state.powerUp.respawnTime = state.clock.getElapsedTime() + 10; 
+
+            if (who === 'player') {
+                state.playerStats.speedMult = 2.0;
+                state.playerStats.powerUpEndTime = state.clock.getElapsedTime() + (POWERUP_DURATION / 1000);
+                if (state.screen !== 'menu') els.powerupIndicator.classList.remove('hidden');
+            } else {
+                state.aiStats.speedMult = 2.0;
+                state.aiStats.powerUpEndTime = state.clock.getElapsedTime() + (POWERUP_DURATION / 1000);
+            }
+        }
+
+        function checkPowerUpExpiration(who, stats, time) {
+            if (time > stats.powerUpEndTime && stats.speedMult > 1) {
+                stats.speedMult = 1.0;
+                if (who === 'player' && state.screen !== 'menu') {
+                    els.powerupIndicator.classList.add('hidden');
+                }
+            }
+        }
+
+        function updateBallPosition(carrier) {
+            const right = new THREE.Vector3(1, 0, 0);
+            right.applyAxisAngle(new THREE.Vector3(0, 1, 0), carrier.rotation.y);
+            
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), carrier.rotation.y);
+
+            const offset = right.multiplyScalar(0.6).add(forward.multiplyScalar(0.3));
+            offset.y = 1.3;
+
+            const targetPos = carrier.position.clone().add(offset);
+            ball.position.lerp(targetPos, 0.2);
+            ball.rotation.y = carrier.rotation.y; 
+            ball.rotation.z = Math.PI / 4;
+        }
+
+        function updateUI() {
+            els.scorePlayer.textContent = state.score.player;
+            els.scoreAi.textContent = state.score.ai;
+            els.difficulty.textContent = `LVL ${state.difficulty}`;
+            els.message.textContent = state.message;
+        }
+
+        function resetPositions() {
+            player.position.set(0, 0, 35);
+            ai.position.set(0, 0, -35);
+            
+            state.hasBall = 'player';
+            ball.rotation.set(0,0,0);
+            
+            state.playerStats.stunnedUntil = 0;
+            state.aiStats.stunnedUntil = 0;
+            state.lastTurnoverTime = -10;
+
+            state.playerStats.speedMult = 1;
+            state.playerStats.powerUpEndTime = 0;
+            state.aiStats.speedMult = 1;
+            state.aiStats.powerUpEndTime = 0;
+            els.powerupIndicator.classList.add('hidden');
+
+            spawnPowerUp();
+            AudioSys.playWhistle();
+        }
+
+        function checkWinCondition() {
+            // Check if score is >= 10
+            if (state.score.player >= 10 || state.score.ai >= 10) {
+                state.screen = 'gameover';
+                els.hud.classList.add('hidden');
+                els.gameOver.classList.remove('hidden');
+                els.powerupIndicator.classList.add('hidden');
+                
+                els.winnerText.textContent = state.score.player >= 10 ? "UNDISPUTED CHAMP" : "SEASON OVER";
+                els.finalDiff.textContent = `LVL ${state.difficulty}`;
+                els.finalScore.textContent = `${state.score.player} - ${state.score.ai}`;
+                
+                AudioSys.stopCrowdNoise();
+            }
+        }
+
+        function animate() {
+            frameId = requestAnimationFrame(animate);
+
+            const time = state.clock.getElapsedTime();
+            const keys = state.keys;
+
+            // Animate Fans (Waving Arms)
+            if (state.cheatActive) {
+                crowdFans.forEach(fan => {
+                    // Wave arm up and down
+                    fan.armPivot.rotation.x = Math.sin(time * fan.speed + fan.offset) * 0.5 + 1.0;
+                });
+            }
+
+            updatePowerUps(time);
+
+            // --- MENU MODE ---
+            if (state.screen === 'menu') {
+                player.position.z -= 0.15;
+                player.position.x += Math.sin(time) * 0.1;
+                player.rotation.y = Math.PI;
+                
+                ai.lookAt(player.position);
+                const dir = new THREE.Vector3().subVectors(player.position, ai.position).normalize();
+                ai.position.add(dir.multiplyScalar(0.13));
+
+                const swing = Math.sin(time * 12) * 0.8;
+                [playerParts, aiParts].forEach(p => {
+                    p.armL.rotation.x = swing;
+                    p.armR.rotation.x = -swing;
+                    p.legL.rotation.x = -swing;
+                    p.legR.rotation.x = swing;
+                    p.root.position.y = Math.abs(Math.sin(time * 12)) * 0.2;
+                });
+
+                updateBallPosition(player);
+
+                demoModeAngle += 0.002;
+                const radius = 45;
+                camera.position.x = Math.sin(demoModeAngle) * radius;
+                camera.position.z = Math.cos(demoModeAngle) * radius;
+                camera.position.y = 30;
+                camera.lookAt(0, 0, 0);
+
+                renderer.render(scene, camera);
+                return;
+            }
+
+            // --- GAME OVER MODE ---
+            // Stop gameplay logic, but keep rendering scene (so you see the frozen moment)
+            if (state.screen === 'gameover') {
+                renderer.render(scene, camera);
+                return;
+            }
+
+            // --- GAMEPLAY MODE ---
+            // This block only runs if state.screen is 'playing'
+            
+            let isMoving = false;
+            const baseMoveSpeed = 0.22;
+            const effectiveSpeed = baseMoveSpeed * state.playerStats.speedMult;
+            const isStunned = time < state.playerStats.stunnedUntil;
+
+            if (!isStunned) {
+                if (keys['KeyW']) { player.position.z -= effectiveSpeed; player.rotation.y = Math.PI; isMoving = true; }
+                if (keys['KeyS']) { player.position.z += effectiveSpeed; player.rotation.y = 0; isMoving = true; }
+                if (keys['KeyA']) { player.position.x -= effectiveSpeed; player.rotation.y = -Math.PI/2; isMoving = true; }
+                if (keys['KeyD']) { player.position.x += effectiveSpeed; player.rotation.y = Math.PI/2; isMoving = true; }
+            }
+
+            player.position.x = Math.max(-18, Math.min(18, player.position.x));
+            player.position.z = Math.max(-38, Math.min(38, player.position.z));
+
+            const applyRunAnim = (parts, moving, t) => {
+                const swing = moving ? Math.sin(t * 12) * 0.8 : 0;
+                parts.armL.rotation.x = swing;
+                parts.armR.rotation.x = -swing;
+                parts.legL.rotation.x = -swing;
+                parts.legR.rotation.x = swing;
+                parts.root.position.y = moving ? Math.abs(Math.sin(t * 12)) * 0.2 : 0;
+            };
+
+            applyRunAnim(playerParts, isMoving && !isStunned, time);
+
+            const baseAiSpeed = 0.12 + (state.difficulty * 0.025);
+            const effectiveAiSpeed = baseAiSpeed * state.aiStats.speedMult;
+            const dist = player.position.distanceTo(ai.position);
+            const isAiStunned = time < state.aiStats.stunnedUntil;
+
+            if (!isAiStunned) {
+                if (state.hasBall === 'player') {
+                    ai.lookAt(player.position.x, 0, player.position.z);
+                    const dir = new THREE.Vector3().subVectors(player.position, ai.position).normalize();
+                    ai.position.add(dir.multiplyScalar(effectiveAiSpeed));
+                    applyRunAnim(aiParts, true, time);
+
+                    if (dist < 1.4 && (time - state.lastTurnoverTime > TACKLE_COOLDOWN)) {
+                        state.hasBall = 'ai';
+                        state.playerStats.stunnedUntil = time + STUN_DURATION;
+                        state.lastTurnoverTime = time;
+                        state.message = "FUMBLE! PLAYER STUNNED!";
+                        AudioSys.playTackle();
+                        updateUI();
+                    }
+                } else {
+                    const targetZ = 35;
+                    const targetX = 0;
+                    
+                    ai.lookAt(targetX, 0, targetZ);
+                    
+                    const targetVec = new THREE.Vector3(targetX, 0, targetZ);
+                    const dir = new THREE.Vector3().subVectors(targetVec, ai.position).normalize();
+                    ai.position.add(dir.multiplyScalar(effectiveAiSpeed));
+                    applyRunAnim(aiParts, true, time);
+
+                    if (dist < 1.4 && (time - state.lastTurnoverTime > TACKLE_COOLDOWN)) {
+                        state.hasBall = 'player';
+                        state.aiStats.stunnedUntil = time + STUN_DURATION;
+                        state.lastTurnoverTime = time;
+                        state.message = "BIG HIT! AI STUNNED!";
+                        AudioSys.playTackle();
+                        updateUI();
+                    }
+                }
+            } else {
+                applyRunAnim(aiParts, false, time);
+            }
+
+            const carrier = state.hasBall === 'player' ? player : ai;
+            updateBallPosition(carrier);
+
+            if (player.position.z < -35 && state.hasBall === 'player') {
+                state.score.player++;
+                state.difficulty++;
+                state.message = `TOUCHDOWN! DIFFICULTY UP: LVL ${state.difficulty}`;
+                AudioSys.playTouchdownSound();
+                updateUI();
+                resetPositions();
+                checkWinCondition();
+            }
+            else if (ai.position.z > 35 && state.hasBall === 'ai') {
+                state.score.ai++;
+                state.message = "TOUCHDOWN AI!";
+                AudioSys.playTouchdownSound();
+                updateUI();
+                resetPositions();
+                checkWinCondition();
+            }
+
+            const targetCamPos = new THREE.Vector3(player.position.x, 15, player.position.z + 18);
+            camera.position.lerp(targetCamPos, 0.1);
+            camera.lookAt(player.position.x, 0, player.position.z - 5);
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function startGame() {
+            AudioSys.init(); // Initialize Audio Context on user gesture
+            state.screen = 'playing';
+            state.score = { player: 0, ai: 0 };
+            state.difficulty = 1;
+            state.message = "KICKOFF!";
+            state.lastTurnoverTime = -10;
+
+            state.playerStats = { speedMult: 1, stunnedUntil: 0, powerUpEndTime: 0 };
+            state.aiStats = { speedMult: 1, stunnedUntil: 0, powerUpEndTime: 0 };
+            
+            els.menu.classList.add('hidden');
+            els.gameOver.classList.add('hidden');
+            els.hud.classList.remove('hidden');
+            els.powerupIndicator.classList.add('hidden');
+            
+            updateUI();
+            resetPositions();
+            
+            // Start crowd noise
+            AudioSys.startCrowdNoise();
+        }
+
+        els.startBtn.addEventListener('click', startGame);
+        els.restartBtn.addEventListener('click', () => {
+            window.location.reload();
+        });
+
+        init();
+
+    </script>
+  <script src="../game-helper.js"></script>
+</body>
+</html>
