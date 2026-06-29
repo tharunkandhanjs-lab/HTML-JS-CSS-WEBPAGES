@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Manage your Axomi experience — display, notifications, privacy, storage, and profile." />
+  <title>Axomi · Settings</title>
+  <link rel="icon" type="image/jpg" href="https://tse1.mm.bing.net/th/id/OIP.qw9D31NVR6okgQmhEXG-DQHaHa?cb=12&rs=1&pid=ImgDetMain&o=7&rm=3" />
+  <style>
+    /* ── reset & base ── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-primary: #0b0d15;
+      --bg-card: #131724;
+      --bg-input: #1a1f30;
+      --border-subtle: #2a314a;
+      --text-primary: #f0f3fa;
+      --text-secondary: #9aa3c7;
+      --text-muted: #6b7499;
+      --accent: #7b6cf6;
+      --accent-glow: rgba(123, 108, 246, 0.25);
+      --accent-hover: #9488f8;
+      --shadow-card: 0 12px 48px rgba(0, 0, 0, 0.6);
+      --radius: 14px;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --transition: 0.25s ease;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 1.5rem;
+      margin: 0;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ── backdrop ── */
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .backdrop__orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.35;
+      will-change: transform;
+      animation: orbFloat 18s ease-in-out infinite alternate;
+    }
+
+    .backdrop__orb--one {
+      width: 500px;
+      height: 500px;
+      background: #7b6cf6;
+      top: -10%;
+      left: -8%;
+      animation-duration: 22s;
+    }
+
+    .backdrop__orb--two {
+      width: 420px;
+      height: 420px;
+      background: #4f8cf7;
+      bottom: -12%;
+      right: -6%;
+      animation-duration: 26s;
+      animation-delay: -4s;
+    }
+
+    .backdrop__orb--three {
+      width: 300px;
+      height: 300px;
+      background: #a78bfa;
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+      animation-duration: 20s;
+      animation-delay: -8s;
+    }
+
+    @keyframes orbFloat {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+      33% {
+        transform: translate(40px, -30px) scale(1.08);
+      }
+      66% {
+        transform: translate(-25px, 40px) scale(0.92);
+      }
+      100% {
+        transform: translate(20px, -20px) scale(1.04);
+      }
+    }
+
+    /* ── container ── */
+    .settings-page {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    /* ── top bar ── */
+    .settings-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem 1.5rem;
+      margin-bottom: 2rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .settings-topbar .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: -0.02em;
+      transition: color var(--transition);
+    }
+
+    .settings-topbar .brand:hover {
+      color: var(--accent);
+    }
+
+    .settings-topbar .brand .icon {
+      font-size: 1.5rem;
+    }
+
+    .settings-topbar .actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      font-family: var(--font);
+      color: var(--text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition), background var(--transition);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: var(--text-primary);
+      background: rgba(123, 108, 246, 0.06);
+    }
+
+    .btn-outline .emoji {
+      font-size: 1rem;
+    }
+
+    /* ── page header ── */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header .overline {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .page-header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0.25rem 0 0.2rem;
+      letter-spacing: -0.02em;
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 600px;
+    }
+
+    /* ── settings grid ── */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* ── settings card ── */
+    .settings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .settings-card:hover {
+      border-color: rgba(123, 108, 246, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .settings-card__head {
+      padding: 1.25rem 1.5rem 0.5rem 1.5rem;
+    }
+
+    .settings-card__head h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .settings-card__body {
+      padding: 0.25rem 1.5rem 1.5rem 1.5rem;
+    }
+
+    .settings-card__body .settings-description {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    /* ── form elements inside cards ── */
+    .settings-card__body label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-top: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .settings-card__body label:first-of-type {
+      margin-top: 0;
+    }
+
+    .settings-card__body input[type="text"],
+    .settings-card__body input[type="email"],
+    .settings-card__body input[type="password"],
+    .settings-card__body input[type="tel"],
+    .settings-card__body input[type="time"],
+    .settings-card__body select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.9rem;
+      font-family: var(--font);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .settings-card__body input:focus,
+    .settings-card__body select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    .settings-card__body select {
+      appearance: auto;
+      cursor: pointer;
+    }
+
+    .settings-card__body .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 0.6rem;
+      font-size: 0.88rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .settings-card__body .checkbox-label input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .settings-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+
+    .settings-time-row {
+      margin-top: 0.5rem;
+    }
+
+    .settings-time-row label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      flex: 1;
+      min-width: 90px;
+      margin-top: 0;
+    }
+
+    .settings-time-row label input[type="time"] {
+      width: 100%;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1.2rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: var(--font);
+      color: #fff;
+      cursor: pointer;
+      transition: background var(--transition), box-shadow var(--transition);
+      margin-top: 0.75rem;
+    }
+
+    .cta-button:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .ghost-button {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.45rem 1rem;
+      font-size: 0.8rem;
+      font-family: var(--font);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: border-color var(--transition), color var(--transition);
+      margin-top: 0.5rem;
+    }
+
+    .ghost-button:hover {
+      border-color: var(--accent);
+      color: var(--text-primary);
+    }
+
+    /* ── history list ── */
+    .history-list {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0.5rem;
+      max-height: 140px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+    }
+
+    .history-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.3rem 0;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .history-list li:last-child {
+      border-bottom: none;
+    }
+
+    .history-summary {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.25rem;
+    }
+
+    /* ── toast ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text-primary);
+      box-shadow: var(--shadow-card);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.success {
+      border-color: #34d399;
+      background: #0f2a22;
+    }
+
+    .toast.error {
+      border-color: #f87171;
+      background: #2a1414;
+    }
+
+    .toast.info {
+      border-color: var(--accent);
+      background: #1a1730;
+    }
+
+    /* ── responsive ── */
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem;
+      }
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+      .settings-topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .settings-topbar .actions {
+        justify-content: flex-start;
+      }
+      .page-header h1 {
+        font-size: 1.6rem;
+      }
+      .settings-card__head,
+      .settings-card__body {
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+      .settings-time-row {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .backdrop__orb {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── backdrop ─── -->
+  <div class="backdrop" aria-hidden="true">
+    <span class="backdrop__orb backdrop__orb--one"></span>
+    <span class="backdrop__orb backdrop__orb--two"></span>
+    <span class="backdrop__orb backdrop__orb--three"></span>
+  </div>
+
+  <!-- ─── toast ─── -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ─── settings page ─── -->
+  <div class="settings-page">
+
+    <!-- top bar -->
+    <header class="settings-topbar">
+      <a class="brand" href="index.html">
+        <span class="icon">🎮</span>
+        <span>Axomi</span>
+      </a>
+      <div class="actions">
+        <a class="btn-outline" href="index.html">
+          <span class="emoji">←</span> Back to Hub
+        </a>
+      </div>
+    </header>
+
+    <!-- page header -->
+    <div class="page-header">
+      <div class="overline">⚙️ Preferences</div>
+      <h1>Settings</h1>
+      <p>Manage your Axomi experience — display, notifications, privacy, storage, and profile.</p>
+    </div>
+
+    <!-- settings grid -->
+    <div class="settings-grid">
+
+      <!-- ─── Profile ─── -->
+      <section class="settings-card">
+        <div class="settings-card__head">
+          <h3>Profile</h3>
+        </div>
+        <div class="settings-card__body">
+          <p class="settings-description">Update your display name, email, and phone number.</p>
+          <label>Email <input id="profileEmail" type="email" placeholder="you@example.com" /></label>
+          <label>Username <input id="profileUsername" type="text" placeholder="Gamer" /></label>
+          <label>Phone <input id="profilePhone" type="tel" placeholder="+1234567890" /></label>
+          <button id="saveProfileBtn" type="button" class="cta-button">Save Profile</button>
+        </div>
+      </section>
+
+      <!-- ─── General / Display ─── -->
+      <section class="settings-card">
+        <div class="settings-card__head">
+          <h3>General / Display</h3>
+        </div>
+        <div class="settings-card__body">
+          <p class="settings-description">Adjust theme, language, and text scaling for the app interface.</p>
+          <label>Theme
+            <select id="themeSelect">
+              <option value="dark">Dark Mode</option>
+              <option value="light">Light Mode</option>
+            </select>
+          </label>
+          <label>Language
+            <select id="languageSelect">
+              <option value="English">English</option>
+              <option value="Spanish">Spanish</option>
+              <option value="French">French</option>
+            </select>
+          </label>
+          <label>Text size
+            <select id="textSizeSelect">
+              <option value="small">Small</option>
+              <option value="medium" selected>Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <!-- ─── Notifications ─── -->
+      <section class="settings-card">
+        <div class="settings-card__head">
+          <h3>Notifications</h3>
+        </div>
+        <div class="settings-card__body">
+          <p class="settings-description">Choose how alerts reach you and when they should be quiet.</p>
+
+          <label class="checkbox-label"><input id="pushToggle" type="checkbox" /> Push notifications</label>
+          <label class="checkbox-label"><input id="emailToggle" type="checkbox" /> Email alerts</label>
+          <label class="checkbox-label"><input id="badgeToggle" type="checkbox" /> In-app badges</label>
+          <label class="checkbox-label"><input id="dndToggle" type="checkbox" /> Do Not Disturb / Quiet hours</label>
+
+          <div class="settings-row settings-time-row">
+            <label>From <input id="quietStart" type="time" value="22:00" /></label>
+            <label>To <input id="quietEnd" type="time" value="07:00" /></label>
+          </div>
+
+          <label>Sound
+            <select id="soundSelect">
+              <option value="default">Default</option>
+              <option value="soft">Soft</option>
+              <option value="muted">Muted</option>
+            </select>
+          </label>
+          <label class="checkbox-label"><input id="vibrationToggle" type="checkbox" /> Vibration</label>
+        </div>
+      </section>
+
+      <!-- ─── History ─── -->
+      <section class="settings-card">
+        <div class="settings-card__head">
+          <h3>History</h3>
+        </div>
+        <div class="settings-card__body">
+          <p class="settings-description">Review your recent game plays and wins inside Axomi.</p>
+          <div id="historySummary" class="history-summary"></div>
+          <ul id="historyList" class="history-list"></ul>
+          <button id="clearHistoryBtn" type="button" class="ghost-button">Clear history</button>
+        </div>
+      </section>
+
+      <!-- ─── Privacy & Permissions ─── -->
+      <section class="settings-card">
+        <div class="settings-card__head">
+          <h3>Privacy & Permissions</h3>
+        </div>
+        <div class="settings-card__body">
+          <p class="settings-description">Choose what app data to share and what device access is allowed.</p>
+
+          <label class="checkbox-label"><input id="dataSharingToggle" type="checkbox" /> Data sharing</label>
+          <label class="checkbox-label"><input id="cameraToggle" type="checkbox" /> Camera access</label>
+          <label class="checkbox-label"><input id="microphoneToggle" type="checkbox" /> Microphone access</label>
+          <label class="checkbox-label"><input id="contactsToggle" type="checkbox" /> Contacts access</label>
+          <label class="checkbox-label"><input id="locationToggle" type="checkbox" /> Location access</label>
+        </div>
+      </section>
+
+      <!-- ─── Storage & Data ─── -->
+      <section class="settings-card">
+        <div class="settings-card__head">
+          <h3>Storage & Data</h3>
+        </div>
+        <div class="settings-card__body">
+          <p class="settings-description">Clear cache, control download quality, and restrict auto-downloads.</p>
+
+          <button id="clearCacheBtn" type="button" class="ghost-button">Clear cache</button>
+          <label>Download quality
+            <select id="downloadQualitySelect">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </label>
+          <label>Auto-downloads
+            <select id="autoDownloadsSelect">
+              <option value="wifi">Wi-Fi only</option>
+              <option value="always">Always</option>
+              <option value="never">Never</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+    </div><!-- /settings-grid -->
+
+    <!-- footer note -->
+    <footer style="margin-top: 3rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--border-subtle); padding-top: 1.5rem;">
+      <p>Axomi · Made with ❤️ by the GOAT · <a href="index.html" style="color: var(--accent); text-decoration: none;">Back to games</a></p>
+    </footer>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ── DOM refs ──
+      const toast = document.getElementById('toast');
+      let toastTimer = null;
+
+      // Profile
+      const profileEmail = document.getElementById('profileEmail');
+      const profileUsername = document.getElementById('profileUsername');
+      const profilePhone = document.getElementById('profilePhone');
+      const saveProfileBtn = document.getElementById('saveProfileBtn');
+
+      // Display
+      const themeSelect = document.getElementById('themeSelect');
+      const languageSelect = document.getElementById('languageSelect');
+      const textSizeSelect = document.getElementById('textSizeSelect');
+
+      // Notifications
+      const pushToggle = document.getElementById('pushToggle');
+      const emailToggle = document.getElementById('emailToggle');
+      const badgeToggle = document.getElementById('badgeToggle');
+      const dndToggle = document.getElementById('dndToggle');
+      const quietStart = document.getElementById('quietStart');
+      const quietEnd = document.getElementById('quietEnd');
+      const soundSelect = document.getElementById('soundSelect');
+      const vibrationToggle = document.getElementById('vibrationToggle');
+
+      // History
+      const historySummary = document.getElementById('historySummary');
+      const historyList = document.getElementById('historyList');
+      const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+      // Privacy
+      const dataSharingToggle = document.getElementById('dataSharingToggle');
+      const cameraToggle = document.getElementById('cameraToggle');
+      const microphoneToggle = document.getElementById('microphoneToggle');
+      const contactsToggle = document.getElementById('contactsToggle');
+      const locationToggle = document.getElementById('locationToggle');
+
+      // Storage
+      const clearCacheBtn = document.getElementById('clearCacheBtn');
+      const downloadQualitySelect = document.getElementById('downloadQualitySelect');
+      const autoDownloadsSelect = document.getElementById('autoDownloadsSelect');
+
+      // ── toast helper ──
+      function showToast(msg, type = 'info') {
+        toast.textContent = msg;
+        toast.className = 'toast visible ' + type;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove('visible');
+        }, 3000);
+      }
+
+      // ── load state from localStorage ──
+      function loadState() {
+        try {
+          const raw = localStorage.getItem('axomi_settings');
+          if (raw) {
+            const state = JSON.parse(raw);
+            // profile
+            if (state.profileEmail) profileEmail.value = state.profileEmail;
+            if (state.profileUsername) profileUsername.value = state.profileUsername;
+            if (state.profilePhone) profilePhone.value = state.profilePhone;
+            // display
+            if (state.theme) themeSelect.value = state.theme;
+            if (state.language) languageSelect.value = state.language;
+            if (state.textSize) textSizeSelect.value = state.textSize;
+            // notifications
+            if (state.push !== undefined) pushToggle.checked = state.push;
+            if (state.emailAlerts !== undefined) emailToggle.checked = state.emailAlerts;
+            if (state.badges !== undefined) badgeToggle.checked = state.badges;
+            if (state.dnd !== undefined) dndToggle.checked = state.dnd;
+            if (state.quietStart) quietStart.value = state.quietStart;
+            if (state.quietEnd) quietEnd.value = state.quietEnd;
+            if (state.sound) soundSelect.value = state.sound;
+            if (state.vibration !== undefined) vibrationToggle.checked = state.vibration;
+            // privacy
+            if (state.dataSharing !== undefined) dataSharingToggle.checked = state.dataSharing;
+            if (state.camera !== undefined) cameraToggle.checked = state.camera;
+            if (state.microphone !== undefined) microphoneToggle.checked = state.microphone;
+            if (state.contacts !== undefined) contactsToggle.checked = state.contacts;
+            if (state.location !== undefined) locationToggle.checked = state.location;
+            // storage
+            if (state.downloadQuality) downloadQualitySelect.value = state.downloadQuality;
+            if (state.autoDownloads) autoDownloadsSelect.value = state.autoDownloads;
+          }
+        } catch (_) { /* ignore */ }
+      }
+
+      // ── save state to localStorage ──
+      function saveState() {
+        const state = {
+          profileEmail: profileEmail.value,
+          profileUsername: profileUsername.value,
+          profilePhone: profilePhone.value,
+          theme: themeSelect.value,
+          language: languageSelect.value,
+          textSize: textSizeSelect.value,
+          push: pushToggle.checked,
+          emailAlerts: emailToggle.checked,
+          badges: badgeToggle.checked,
+          dnd: dndToggle.checked,
+          quietStart: quietStart.value,
+          quietEnd: quietEnd.value,
+          sound: soundSelect.value,
+          vibration: vibrationToggle.checked,
+          dataSharing: dataSharingToggle.checked,
+          camera: cameraToggle.checked,
+          microphone: microphoneToggle.checked,
+          contacts: contactsToggle.checked,
+          location: locationToggle.checked,
+          downloadQuality: downloadQualitySelect.value,
+          autoDownloads: autoDownloadsSelect.value,
+        };
+        try {
+          localStorage.setItem('axomi_settings', JSON.stringify(state));
+        } catch (_) { /* ignore */ }
+        showToast('✅ Settings saved', 'success');
+      }
+
+      // ── history ──
+      function loadHistory() {
+        try {
+          const raw = localStorage.getItem('axomi_history');
+          let entries = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(entries)) entries = [];
+          historySummary.textContent = entries.length + ' recent activity entries';
+          historyList.innerHTML = '';
+          if (entries.length === 0) {
+            historyList.innerHTML = '<li style="color: var(--text-muted); font-style: italic;">No history yet.</li>';
+          } else {
+            const latest = entries.slice(-8).reverse();
+            latest.forEach(item => {
+              const li = document.createElement('li');
+              li.innerHTML = `<span>${item.label || 'Activity'}</span><span>${item.time || ''}</span>`;
+              historyList.appendChild(li);
+            });
+          }
+        } catch (_) {
+          historySummary.textContent = '0 recent activity entries';
+          historyList.innerHTML = '<li style="color: var(--text-muted); font-style: italic;">No history.</li>';
+        }
+      }
+
+      function addHistoryEntry(label) {
+        try {
+          const raw = localStorage.getItem('axomi_history');
+          let entries = raw ? JSON.parse(raw) : [];
+          if (!Array.isArray(entries)) entries = [];
+          entries.push({ label: label, time: new Date().toLocaleString() });
+          if (entries.length > 50) entries = entries.slice(-50);
+          localStorage.setItem('axomi_history', JSON.stringify(entries));
+          loadHistory();
+        } catch (_) { /* ignore */ }
+      }
+
+      function clearHistory() {
+        try {
+          localStorage.removeItem('axomi_history');
+          loadHistory();
+          showToast('🧹 History cleared', 'info');
+        } catch (_) { /* ignore */ }
+      }
+
+      // ── event listeners ──
+
+      // Save Profile
+      saveProfileBtn.addEventListener('click', function() {
+        const email = profileEmail.value.trim();
+        const username = profileUsername.value.trim();
+        if (!email && !username) {
+          showToast('Please enter at least an email or username.', 'error');
+          return;
+        }
+        // store profile in a separate key or merge with settings
+        try {
+          const settings = JSON.parse(localStorage.getItem('axomi_settings') || '{}');
+          settings.profileEmail = email;
+          settings.profileUsername = username;
+          settings.profilePhone = profilePhone.value.trim();
+          localStorage.setItem('axomi_settings', JSON.stringify(settings));
+        } catch (_) { /* ignore */ }
+        addHistoryEntry('Profile updated');
+        showToast('👤 Profile saved', 'success');
+      });
+
+      // Clear History
+      clearHistoryBtn.addEventListener('click', clearHistory);
+
+      // Clear Cache
+      clearCacheBtn.addEventListener('click', function() {
+        try {
+          localStorage.removeItem('axomi_cache');
+          showToast('🗑️ Cache cleared', 'info');
+          addHistoryEntry('Cache cleared');
+        } catch (_) { /* ignore */ }
+      });
+
+      // Theme toggle (also update body class for demo)
+      themeSelect.addEventListener('change', function() {
+        const val = this.value;
+        if (val === 'light') {
+          document.body.style.background = '#f0f2f8';
+          document.body.style.color = '#111827';
+        } else {
+          document.body.style.background = '';
+          document.body.style.color = '';
+        }
+        saveState();
+      });
+
+      // Auto-save on any checkbox/select/input change (debounced)
+      const autoSaveElements = [
+        themeSelect, languageSelect, textSizeSelect,
+        pushToggle, emailToggle, badgeToggle, dndToggle,
+        quietStart, quietEnd, soundSelect, vibrationToggle,
+        dataSharingToggle, cameraToggle, microphoneToggle,
+        contactsToggle, locationToggle,
+        downloadQualitySelect, autoDownloadsSelect
+      ];
+
+      let saveTimeout = null;
+      function autoSave() {
+        clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(() => {
+          saveState();
+        }, 600);
+      }
+
+      autoSaveElements.forEach(el => {
+        el.addEventListener('change', autoSave);
+        if (el.tagName === 'SELECT') el.addEventListener('change', autoSave);
+      });
+
+      // Also save on input for profile fields (but debounced separately)
+      const textFields = [profileEmail, profileUsername, profilePhone];
+      textFields.forEach(el => {
+        el.addEventListener('input', function() {
+          clearTimeout(saveTimeout);
+          saveTimeout = setTimeout(saveState, 800);
+        });
+      });
+
+      // ── init ──
+      loadState();
+      loadHistory();
+
+      // if no history, add a welcome entry
+      try {
+        const raw = localStorage.getItem('axomi_history');
+        if (!raw) {
+          addHistoryEntry('Settings page opened');
+        }
+      } catch (_) { /* ignore */ }
+
+      // restore theme from state
+      if (themeSelect.value === 'light') {
+        document.body.style.background = '#f0f2f8';
+        document.body.style.color = '#111827';
+      }
+
+      console.log('⚙️ Axomi Settings ready');
+    })();
+  </script>
+
+</body>
+</html>
